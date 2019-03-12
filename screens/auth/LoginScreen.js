@@ -17,17 +17,20 @@ import Icon from 'react-native-vector-icons/FontAwesome'
 
 
 export default class Login extends React.Component {
-      
+  static navigationOptions = {
+		header: null
+	  };
 
-isUserEqualGG = (googleUser, firebaseUser) => {
+isUserEqualGG = (thisuser, firebaseUser) => {
     if (firebaseUser) {
       var providerData = firebaseUser.providerData;
       for (var i = 0; i < providerData.length; i++) {
         if (
           providerData[i].providerId ===
             firebase.auth.GoogleAuthProvider.PROVIDER_ID &&
-          providerData[i].uid === googleUser.getBasicProfile().getId()
-        ) {
+          providerData[i].uid === thisuser.uid 
+        )
+         {
           // We don't need to reauth the Firebase connection.
           return true;
         }
@@ -35,55 +38,84 @@ isUserEqualGG = (googleUser, firebaseUser) => {
     }
     return false;
   };
-  
-
-
+  isUserEqualFB = (thisuser, firebaseUser) => {
+    if (firebaseUser) {
+      var providerData = firebaseUser.providerData;
+      for (var i = 0; i < providerData.length; i++) {
+        if (
+          providerData[i].providerId === 
+            firebase.auth.FacebookAuthProvider.PROVIDER_ID &&
+          providerData[i].uid === thisuser.userId
+        )
+         {
+          // We don't need to reauth the Firebase connection.
+          return true;
+        }
+      }
+    }
+    return false;
+  };
 onSignInGG = googleUser => {
-    console.log('Google Auth Response', googleUser);
-    // We need to register an Observer on Firebase Auth to make sure auth is initialized.
-    var unsubscribe = firebase.auth().onAuthStateChanged(
-      function(firebaseUser) {
-        unsubscribe();
         // Check if we are already signed-in Firebase with the correct user.
-        if (!this.isUserEqualGG(googleUser, firebaseUser)) {
+          // Build Firebase credential with the Google ID token.
+          console.log('Google Auth Response', googleUser);
+          var unsubscribe = firebase.auth().onAuthStateChanged(
+            function(firebaseUser) {
+              unsubscribe();
+              // Check if we are already signed-in Firebase with the correct user.
+          
+          if (!this.isUserEqualGG(googleUser, firebaseUser)) {
           // Build Firebase credential with the Google ID token.
           var credential = firebase.auth.GoogleAuthProvider.credential(
             googleUser.idToken,
             googleUser.accessToken
           );
           // Sign in with credential from the Google user.
+          var key = firebase.auth().currentUser.uid;           
           firebase
             .auth()
-            .signInAndRetrieveDataWithCredential(credential)
+            .signInAndRetrieveDataWithCredential(credential) 
             .then(function(result) {
               console.log('user signed in ');
-              this.setState({result});
-              // if (result.additionalUserInfo.isNewUser) {
-                var key = firebase
-                .database()
-                .ref("/Users")
-                .push().key;
+              if (result.additionalUserInfo.isNewUser) {
                 firebase
                   .database()
-                  .ref('/Users/' + result.user.uid)
+                  .ref('/Users/' + key)
                   .set({
-                    uid: result.user.uid,
+                    uid: key,
                     email: result.user.email,
                     first_name: result.additionalUserInfo.profile.given_name,
                     last_name: result.additionalUserInfo.profile.family_name,
-                    profile_picture: result.additionalUserInfo.profile.picture,
-                    created_at: Date.now()
+                    profile_picture: result.additionalUserInfo.profile.picture+"?sz=5000",
+                    created_at: Date.now(),
+                    interests_number: {
+                      1:0,
+                      2:0,
+                      3:0,
+                      4:0,
+                      5:0,
+                      6:0,
+                      7:0,
+                      8:0,
+                      9:0,
+                      10:0,
+                      11:0,
+                      12:0
+                    }
                   })
-
-              this.props.navigation.navigate("ProfileScreen", {'dataKey': result.user.uid});  
-              // } else {
-              //   firebase
-              //     .database()
-              //     .ref('/Users/' + result.user.uid)
-              //     .update({
-              //       last_logged_in: Date.now()
-              //     });
-              // }
+                  .then(function(snapshot){
+                    console.log('Snapshot',snapshot);
+                  })
+              } else {
+                firebase
+                  .database()
+                  .ref('/Users/' + key)
+                  .update({
+                    last_logged_in: Date.now()
+                  });
+                  
+              }
+            
             })
             .catch(function(error) {
               // Handle Errors here.
@@ -95,13 +127,15 @@ onSignInGG = googleUser => {
               var credential = error.credential;
               // ...
             });
+       this.props.navigation.navigate("ProfileScreen", {'dataKey': key});    
+            
         } else {
           console.log('User already signed-in Firebase.');
         }
       }.bind(this)
     );
-    
   };
+
                                              //facebook
 signInWithFacebook = async() =>{
     try {
@@ -116,6 +150,7 @@ signInWithFacebook = async() =>{
       { permissions: ['public_profile','user_birthday','email','user_photos'] }
     );
     if (type === 'success') {
+      console.log(result)
       // Build Firebase credential with the Facebook access token.
       const credential = firebase.auth.FacebookAuthProvider.credential(token);
           // Sign in with credential from the Facebook user.
@@ -123,26 +158,38 @@ signInWithFacebook = async() =>{
       .catch((error) => {
         console.log(error)
       })
-              const response = await fetch(`https://graph.facebook.com/me/?fields=id,first_name,last_name,email,picture,name&access_token=${token}`);
+              const response = await fetch(`https://graph.facebook.com/me/?fields=id,first_name,last_name,email,picture.width(5000),name&access_token=${token}`);
               const userInfo = await response.json();
               this.setState({userInfo});
-              var key = firebase
-              .database()
-              .ref("/Users")
-              .push().key;
+              var key = firebase.auth().currentUser.uid;
               firebase
                   .database()
-                  .ref('/Users/'+ userInfo.id) 
+                  .ref('/Users/'+ key) 
                   .set({
                     uid: userInfo.id,
                     email: userInfo.email,
-                    profile_picture: userInfo.picture,
+                    profile_picture: userInfo.picture.data.url,
                     first_name: userInfo.first_name,
                     last_name: userInfo.last_name,
-                    created_at: Date.now()
+                    created_at: Date.now(),
+                    interests_number: {
+                      1:0,
+                      2:0,
+                      3:0,
+                      4:0,
+                      5:0,
+                      6:0,
+                      7:0,
+                      8:0,
+                      9:0,
+                      10:0,
+                      11:0,
+                      12:0
+                    }
+                    
                   })
-          
-            this.props.navigation.navigate("ProfileScreen", {'dataKey': userInfo.id});     
+        
+            this.props.navigation.navigate("ProfileScreen", {'dataKey': key});     
     } else {
       // type === 'cancel'
     }
@@ -151,6 +198,7 @@ signInWithFacebook = async() =>{
     }
     
   }
+    
                                                 //google
   signInWithGoogleAsync = async () => {
     try {
@@ -215,7 +263,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#ffe3e3',
     alignItems:'center',
-    paddingTop: 20,
+    paddingTop: 100,
   }, 
   welcomeImage: {
     width: 250,

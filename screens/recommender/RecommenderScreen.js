@@ -6,7 +6,7 @@ import Filters from '../../components/Filters';
 import CardItem from '../../components/CardItem';
 import Demo from '../../assets/data/demo.js';
 import Icon from 'react-native-vector-icons/FontAwesome'
-
+import * as firebase from 'firebase';
 
 export default class RecommenderScreen extends React.Component {
 	static navigationOptions = {
@@ -22,7 +22,12 @@ export default class RecommenderScreen extends React.Component {
 	state = {
 		data: Demo
 	};
-
+	constructor(props) {
+		super(props);
+		this.state = {
+		  userdata: ""
+		}
+	  }
 	render() {
 		return (
 			<ImageBackground
