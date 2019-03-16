@@ -1,17 +1,32 @@
 import React from "react";
 import { StyleSheet, Text, ListView } from "react-native";
-import { Container, Content, CheckBox, Body, Form, Input, Item, Button, Icon, ListItem, Textarea, 
-  Card, CardItem, Picker, DatePicker, Header } from "native-base";
+import {
+  Container,
+  Content,
+  CheckBox,
+  Body,
+  Form,
+  Input,
+  Item,
+  Button,
+  Icon,
+  ListItem,
+  Textarea,
+  Card,
+  CardItem,
+  Picker,
+  DatePicker,
+  Header
+} from "native-base";
 import * as firebase from "firebase";
 import moment from "moment";
 
 export default class AddPostScreen extends React.Component {
   static navigationOptions = {
-    title: null,   
+    title: null,
     headerStyle: {
-        backgroundColor: '#ffe3e3',
-    },      
-    
+      backgroundColor: "#ffe3e3"
+    }
   };
   constructor(props) {
     super(props);
@@ -23,19 +38,20 @@ export default class AddPostScreen extends React.Component {
       newText: "",
       checked: undefined,
       postType: "",
-      selected: "",
+      categorykey: "",
+      selectedcat: "",
+      subcategorykey: "",
       selectedsubcat: "",
       chosenDate: "",
       location: "",
-      date: new Date(),
-      time: moment().format('hh:mm a'),
-      subViewData: []
+      subViewData: [],
+      keyData: "",
+      userId: "",
     };
-
     this.setDate = this.setDate.bind(this);
     this._handleSelectSubcategory = this._handleSelectSubcategory.bind(this);
-    this.onValueChangecat = this.onValueChangecat.bind(this)
-    this.onValueChangesubcat = this.onValueChangesubcat.bind(this)
+    this.onValueChangecat = this.onValueChangecat.bind(this);
+    this.onValueChangesubcat = this.onValueChangesubcat.bind(this);
   }
 
   setDate(newDate) {
@@ -43,39 +59,52 @@ export default class AddPostScreen extends React.Component {
   }
   onValueChangecat(value) {
     this.setState({
-      selected: value
+      categorykey: value
     });
-    this._handleSelectSubcategory(value)
+    this._handleSelectSubcategory(value);
   }
-  onValueChangesubcat(value) {
+  onValueChangesubcat(value){
     this.setState({
-      selectedsubcat: value
+      subcategorykey: value
+    });
+    const ref = firebase.database().ref('Categories/' + this.state.categorykey + '/Subcategories/' +value);
+    ref.once("value", snapshot => {
+      this.setState({ selectedsubcat: snapshot.val().subcategoryname });
     });
   }
 
-  componentDidMount = () => {
-    var newData = [];
-    firebase
+  componentDidMount = async () => {
+    var newData = this.state.listViewData;
+    newData.slice()
+    await firebase
       .database()
       .ref("/Categories/")
-      .on("child_added", async data => {
-        keyData = data.key;
-        await this.setState({ listViewData: [...this.state.listViewData, data] });
-      });
+      .on("child_added", function(data) {
+        newData.push(data)
+      })
+    await firebase.database().ref('/Categoreis/').off()
+    await this.setState({listViewData:newData})
   };
 
-  _handleSelectSubcategory = async(selected) => {
-        console.log(selected)
-        await this.setState({ subViewData: []})
-        firebase.database().ref(`/Categories/`+selected+`/Subcategories`).on('child_added', async (data)  => {
-          await this.setState({ subViewData: [...this.state.subViewData, data] })
-        })
-  }
+  _handleSelectSubcategory = async categorykey => {
+    await this.setState({ subViewData: [] });
+    firebase
+      .database()
+      .ref('/Categories/' + categorykey + '/Subcategories')
+      .on("child_added", async data => {
+        await this.setState({ subViewData: [...this.state.subViewData, data] });
+      });
+    const ref = firebase.database().ref("Categories/" + categorykey);
+    ref.once("value", snapshot => {
+      this.setState({ selectedcat: snapshot.val().categoryname });
+    });
+  };
   addRow(name, txt, ty, cat, subcat, edate, lo, d, t) {
     var key = firebase
       .database()
       .ref("/Posts")
       .push().key;
+    
     firebase
       .database()
       .ref("/Posts")
@@ -89,8 +118,12 @@ export default class AddPostScreen extends React.Component {
         subcategoryname: subcat,
         eventlocation: lo,
         date: d,
-        time: t
+        time: t,
+        uid: firebase.auth().currentUser.uid,
+        views: 0
       });
+    this.state.keyData = key;
+    
   }
   setType(check) {
     if (check == true) {
@@ -133,6 +166,7 @@ export default class AddPostScreen extends React.Component {
                 <Input
                   style={{ fontSize: 20, textAlign: "center" }}
                   onChangeText={newTopic => this.setState({ newTopic })}
+                  value={this.state.newTopic}
                   placeholder="Topic name"
                   placeholderTextColor="#444FAD"
                 />
@@ -146,6 +180,7 @@ export default class AddPostScreen extends React.Component {
                   onPress={() =>
                     this.setState({ checked: !this.state.checked })
                   }
+                  value={this.state.checked}
                   color="#FF3879"
                 />
                 <Body>
@@ -164,16 +199,9 @@ export default class AddPostScreen extends React.Component {
               {this.state.checked ? (
                 <Content>
                   <Item style={{ borderColor: "transparent" }}>
-                    <Text
-                      style={{
-                        color: "#FFE3E3",
-                        fontSize: 16,
-                        fontWeight: "bold",
-                        marginLeft: 40
-                      }}
-                    >
-                      Event Date:
-                    </Text>
+                  <Icon name="md-calendar"
+                    style={{color: '#FFE3E3', marginLeft: 40}} />
+                    
                     <DatePicker
                       locale={"en"}
                       timeZoneOffsetInMinutes={undefined}
@@ -186,22 +214,16 @@ export default class AddPostScreen extends React.Component {
                       onDateChange={this.setDate}
                       disabled={false}
                       onChangeText={chosenDate => this.setState({ chosenDate })}
+                      value={this.state.chosenDate}
                     />
                   </Item>
                   <Item style={{ borderColor: "transparent" }}>
-                    <Text
-                      style={{
-                        color: "#FFE3E3",
-                        fontSize: 16,
-                        fontWeight: "bold",
-                        marginLeft: 40
-                      }}
-                    >
-                      Event Location:
-                    </Text>
+                  <Icon name="md-pin"
+                    style={{color: '#FFE3E3', marginLeft: 40}} />
                     <Input
-                      style={{ fontSize: 16, color: "#FFE3E3" }}
+                      style={{ fontSize: 16, color: "#FFE3E3", marginLeft: 10 }}
                       onChangeText={location => this.setState({ location })}
+                      value={this.state.location}
                       placeholder="Location..."
                       placeholderTextColor="#d3d3d3"
                     />
@@ -228,16 +250,26 @@ export default class AddPostScreen extends React.Component {
                       fontWeight: "bold",
                       fontSize: 16
                     }}
-                    style={{ width: undefined }}
+                    style={{ width: 360}}
                     textStyle={{ color: "#444FAD", fontSize: 16 }}
-                    selectedValue={this.state.selected}
-                    onValueChange={ (value) => {this.onValueChangecat(value)}}
+                    selectedValue={this.state.categorykey}
+                    value={this.state.selectedcat}
+                    onValueChange={value => {
+                      this.onValueChangecat(value);
+                    }}
                   >
-                    { this.state.listViewData.map( (data,i) => {
-                      //console.log(data.key)
-                        
-                      return(<Picker.Item key={i} label={data.val().categoryname} value={data.key}/> )
-                    })}
+                    {
+                      
+                      this.state.listViewData.map((object,id)=>{
+                        return(
+                          <Picker.Item
+                          key={id}
+                          label={object.val().categoryname}
+                          value={object.key}
+                          />
+                        )
+                      })
+                    }
                   </Picker>
                 </Form>
               </Item>
@@ -261,18 +293,25 @@ export default class AddPostScreen extends React.Component {
                       fontWeight: "bold",
                       fontSize: 16
                     }}
-                    style={{ width: undefined }}
+                    style={{ width: 360 }}
                     textStyle={{ color: "#444FAD", fontSize: 16 }}
-                    selectedValue={this.state.selectedsubcat}
+                    selectedValue={this.state.subcategorykey}
+                    value={this.state.selectedsubcat}
                     onValueChange={this.onValueChangesubcat.bind(this)}
                   >
-                    {this.state.subViewData.map( (data,i) => {
-                      return(<Picker.Item key={i} label={data.val().subcategoryname} value={data.val().subcategoryname}/>)
+                    {this.state.subViewData.map((data, i) => {
+                      return (
+                        <Picker.Item
+                          key={i}
+                          label={data.val().subcategoryname}
+                          value={data.key}
+                        />
+                      );
                     })}
                   </Picker>
                 </Form>
               </Item>
-              
+
               <Content>
                 <Form>
                   <Textarea
@@ -281,6 +320,7 @@ export default class AddPostScreen extends React.Component {
                     placeholder="Textarea"
                     placeholderTextColor="#aabbcc"
                     onChangeText={newText => this.setState({ newText })}
+                    value={this.state.newText}
                     style={{
                       backgroundColor: "white",
                       borderRadius: 10,
@@ -295,15 +335,25 @@ export default class AddPostScreen extends React.Component {
                     this.state.newTopic,
                     this.state.newText,
                     this.state.postType,
-                    this.state.selected,
+                    this.state.selectedcat,
                     this.state.selectedsubcat,
                     this.state.chosenDate.toString().substr(4, 12),
                     this.state.location,
-                    this.state.date.toString().substr(4, 12),
-                    this.state.time
+                    new Date().toString().substr(4, 12),
+                    moment().format("hh:mm a")
                   );
-                  this.props.navigation.navigate("PostDetailsScreen");
-                  //console.log(this.props)
+                  this.props.navigation.navigate("PostDetailsScreen", {
+                    dataKey: this.state.keyData,  
+                  });
+                  this.setState({ 
+                    newTopic: "",
+                    newText: "",
+                    checked: undefined,
+                    chosenDate: "",
+                    location: "",
+                    selectedcat: "",
+                    selectedsubcat: ""
+                  });                 
                 }}
                 style={{
                   backgroundColor: "#FF3879",

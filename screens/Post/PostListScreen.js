@@ -8,50 +8,56 @@ var data = []
 export default class PostListScreen extends React.Component {
    static navigationOptions = ({ navigation }) => {
     return {
-    title: navigation.state.params.subcategoryname,
+    // title: navigation.state.params.subcategoryname,
     headerStyle: {
       backgroundColor: '#ffe3e3',
     },  
-    headerBackTitle: null
+    headerBackTitle: null,
+    headerTitleStyle: {
+      color: '#444FAD',
+  },
   };
 };
 
   constructor(props) {
     super(props);
-
     this.ds = new ListView.DataSource({ rowHasChanged: (r1, r2) => r1 !== r2 })
-
     this.state = {
       listViewData: data,
       categoryname: "",
-      subcategoryname: ""
+      subcategoryname: "",
+      
     }
   }
+
   async componentDidMount() {
     await this.setState({categoryname: this.props.navigation.state.params.categoryname,
-      subcategoryname: this.props.navigation.state.params.subcategoryname})
+    subcategoryname: this.props.navigation.state.params.subcategoryname,})
     var that = this
-    firebase.database().ref('/Posts').on('child_added', function (data) {
-      var newData = [...that.state.listViewData]
-      newData.push(data)
+    firebase.database().ref('/Posts/').on('child_added', function (data) {
+      var newData = [...that.state.listViewData]      
+      if(data.val().categoryname==that.state.categoryname && data.val().subcategoryname==that.state.subcategoryname) newData.push(data)
       that.setState({ listViewData: newData })  
     })
-    console.log(this.state.categoryname+"  "+this.state.subcategoryname)
   }
 
   render() {
     return (
       <Container style={styles.container}>
-        
         <Content>
           <List
             enableEmptySections
             dataSource={this.ds.cloneWithRows(this.state.listViewData)}
             renderRow={data =>
               <ListItem>
-                <Text style={{fontSize:17}}
+                <Text style={{fontSize:17,color: '#ff3879'}}
                   onPress={ () => {this.props.navigation.navigate('PostDetailsScreen',  {'dataKey': data.key})}}> 
-                  {data.val().topicname}
+                  {data.val().posttype=="Event"? "[EVENT] ": null}
+                  <Text style={{color: '#444FAD'}}> 
+                    {data.val().topicname}
+                  </Text>
+                  
+                  
                 </Text>
               </ListItem>
             }
@@ -75,9 +81,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffff',
-    paddingTop: 20,
+    paddingTop: 10,
+    paddingLeft: 10,
+    paddingRight: 10
   
   },
   
 });
-

@@ -26,20 +26,20 @@ export default class SubcategoriesListScreen extends React.Component {
     
         this.state = {
           listViewData: data,
-          keyData: "",
+          categorykey: "",
           categoryname: "",
         }
     }
     async componentDidMount() {
-        await this.setState({keyData: this.props.navigation.state.params.dataKey,
+        await this.setState({categorykey: this.props.navigation.state.params.categorykey,
         categoryname: this.props.navigation.state.params.categoryname})
         var that = this
-        firebase.database().ref('/Categories/'+this.state.keyData+'/Subcategories').on('child_added', function (data) {
+        firebase.database().ref('/Categories/'+this.state.categorykey+'/Subcategories').on('child_added', function (data) {
             var newData = [...that.state.listViewData]
             newData.push(data)
             that.setState({ listViewData: newData })            
         })
-      }
+    }
     render() {
         //const { navigate } = this.props.navigation;
         return (
@@ -51,7 +51,10 @@ export default class SubcategoriesListScreen extends React.Component {
                         renderRow={data =>
                             <ListItem>
                                 <Text style={{fontSize:17}}
-                                    onPress={ () => {this.props.navigation.navigate('PostListScreen', {'categoryname': this.state.categoryname, 'subcategoryname': data.val().subcategoryname})}}> 
+                                    onPress={ () => {this.props.navigation.navigate('PostListScreen', 
+                                    {'categoryname': this.state.categoryname, 
+                                    'subcategoryname': data.val().subcategoryname
+                                    })}}> 
                                     {data.val().subcategoryname}
                                 </Text>
                                 
