@@ -5,7 +5,7 @@ import { Container, Content, Form, Item, Button, Icon, List, ListItem, Card, Car
 import * as firebase from "firebase";
 import moment from "moment";
 
-export default class PostDetailsScreen extends React.Component {
+export default class PostDetailsControl extends React.Component {
   static navigationOptions = ({ navigation }) => {
     return {
       title: "PostDetails",
@@ -36,18 +36,17 @@ export default class PostDetailsScreen extends React.Component {
       currentuserdata: "",
       userinfo: "",
       numberOfreport: 0,
-      numberOfcommentreport: 0,
+      keyData: "",
     };
   }
   async componentDidMount() {
     await this.setState({
       keyData: this.props.navigation.state.params.dataKey,
       categoryname: this.props.navigation.state.params.categoryname,
-      currentUserID: firebase.auth().currentUser.uid
     });
     this.checkCategoryKey(this.state.categoryname)
-    this.state.like = this.checkLike(this.state.currentUserID);
-    this.state.numberOflike = this.likeCount(this.state.currentUserID); 
+    //this.state.like = this.checkLike(this.state.currentUserID);
+    this.state.numberOflike = this.likeCount(0); 
     await firebase.database().ref("Posts/" + this.state.keyData).on("value", snapshot => {
       this.setState({ 
         postdata: snapshot.val(), 
@@ -56,51 +55,34 @@ export default class PostDetailsScreen extends React.Component {
         numberOfreport: snapshot.val().report
       });
     });
-    await firebase.database().ref('/Users/' +  firebase.auth().currentUser.uid+"/interests_number/"+this.state.categorykey).on("value", snapshot => {
-      this.setState({ numberOfinterest: snapshot.val(), } );      
-    });
     var that = this;
     await firebase.database().ref("Posts/" + this.state.keyData + "/comments/").on("child_added", function(data) {
         var newData = [...that.state.listViewData];
         newData.push(data);
         that.setState({ listViewData: newData });
     });   
-    await firebase.database().ref("Users/" + firebase.auth().currentUser.uid).on("value", snapshot => {
-      this.setState({ currentuserdata: snapshot.val(), } );
-    });
-    this.viewCount();
+    
   }
-  report(key,commentkey,text){
+  deletecomment(keypost, keycomment){
     Alert.alert(
-      'Report',
-      'Are you sure you want to report',
+      'Delete',
+      'Do you want to delete this comment',
       [
         {
           text: 'Cancel',
           onPress: () => console.log('Cancel Pressed'),
           style: 'cancel',
         },
-        {text: 'Report', onPress: () => {
-          if(text=="Post"){
-            firebase.database().ref("Posts/" + key).update({
-              "report": this.state.numberOfreport+1
-            });
-          }
-          else{
-            firebase.database().ref("Posts/" + key+"/comments/"+commentkey).on("value", snapshot => {
-              this.setState({ 
-                numberOfcommentreport: snapshot.val().report
-              });
-            });
-            firebase.database().ref("Posts/" + key+"/comments/"+commentkey).update({
-              "report": this.state.numberOfcommentreport+1
-            });
-          }
-        }},
+        {text: 'Delete', 
+            onPress: () => {
+              firebase.database().ref("Posts/" + keypost+"/comments/"+keycomment).remove();
+            }
+        },
       ],
       {cancelable: false},
     );
   }
+
   checkCategoryKey(name){
     var key
     firebase.database().ref('/Categories/').orderByChild('categoryname').equalTo(name).on("value", function(snapshot) {
@@ -122,44 +104,7 @@ export default class PostDetailsScreen extends React.Component {
     firebase.database().ref("Posts/" + this.state.keyData).update({
       "views": this.state.numberOfview+1
     });
-    this.state.numberOfinterest = this.state.numberOfinterest+2
-    this._handleSetInterest(this.state.numberOfinterest)
   }
-  
-  addComment(data, date, time) {
-    var key = firebase
-      .database()
-      .ref("Posts/" + this.state.keyData + "/comments")
-      .push().key;
-    firebase
-      .database()
-      .ref("Posts/" + this.state.keyData + "/comments")
-      .child(key)
-      .set({ 
-        commenttext: data, 
-        commentdate: date, 
-        commenttime: time, 
-        userinfo:{
-          uid: this.state.currentuserdata.uid,
-          first_name: this.state.currentuserdata.first_name,
-          last_name: this.state.currentuserdata.last_name,
-          profile_picture: this.state.currentuserdata.profile_picture,
-        },
-        report: 0,
-      });
-      this.state.numberOfinterest = this.state.numberOfinterest+3
-      this._handleSetInterest(this.state.numberOfinterest)
-  }
-  checkLike  = (uid) => {
-    var exists 
-    firebase
-    .database()
-    .ref("Posts/" + this.state.keyData + "/likes/")
-    .child(uid).on('value', function(snapshot) {
-      exists = (snapshot.val() !== null);
-    });
-    return exists
-}
   likeCount = (uid) => {
     var numberOflike 
     firebase
@@ -170,45 +115,7 @@ export default class PostDetailsScreen extends React.Component {
     });
     return numberOflike
   }
-  Like(){
-    if(this.state.like==false){
-      firebase
-        .database()
-        .ref("Posts/" + this.state.keyData + "/likes")
-        .child(this.state.currentUserID)
-        .set({ uid: this.state.currentUserID });
-      firebase
-        .database()
-        .ref("Users/" +this.state.currentUserID + "/likes")
-        .push(this.state.keyData)
-      this.state.numberOflike = this.state.numberOflike+1
-      this.state.numberOfinterest = this.state.numberOfinterest+5
-      this._handleSetInterest(this.state.numberOfinterest)
-    }
-    else {
-      firebase
-        .database()
-        .ref("Posts/" + this.state.keyData + "/likes/"+this.state.currentUserID)
-        .remove()
-        .then(function() {
-          console.log("Remove succeeded.")
-        })
-        .catch(function(error) {
-          console.log("Remove failed: " + error.message)
-        });
-        firebase
-        .database()
-        .ref("Users/"+this.state.currentUserId+"/likes/"+this.state.keyData)
-        .remove()
 
-        this.state.numberOflike = this.state.numberOflike-1
-        this.state.numberOfinterest = this.state.numberOfinterest-5
-        this._handleSetInterest(this.state.numberOfinterest)
-    }
-}
-_handleSetInterest(number){
-  firebase.database().ref("/Users/" + this.state.currentUserID + "/interests_number/").child(this.state.categorykey).set(number)
-}
   render() {
     return (
       <Container>
@@ -270,26 +177,11 @@ _handleSetInterest(number){
                 >
                   {this.state.userinfo.first_name+" "+this.state.userinfo.last_name}
                 </Text>
-                <Text
-                  style={{ marginLeft: 15, marginTop: 5 }}
-                  onPress={() => {
-                    this.setState({ like: !this.state.like })
-                    this.Like()
-                  }}
-                >
-                  {this.state.like ? ( 
-                    
-                    <Image
-                      style={{ width: 25, height: 25 }}
-                      source={require("../../assets/images/heartpinkIcon.png")}
-                    />
-                    
-                  ) : (
+                <Text style={{ marginLeft: 15, marginTop: 5 }}>
                     <Image
                       style={{ width: 25, height: 25 }}
                       source={require("../../assets/images/heartIcon.png")}
                     />
-                  )}
                 </Text>
                 <Text style={{ fontSize: 16, color: "#FF3879" }}> {this.state.numberOflike}</Text>
                 <Image
@@ -298,52 +190,11 @@ _handleSetInterest(number){
                   
                 />
                 <Text style={{ fontSize: 16, color: "#FF3879" }}> {this.state.numberOfview}</Text>
-                <Text  
-                  style={{fontSize: 16, marginLeft: 10}}
-                    onPress={() => {
-                    this.report(this.state.keyData,"","Post")
-                  }}>
-                  <Icon name='md-information-circle' style={{fontSize: 16, color:"#FF3879"}}/>
-                </Text>
               </Item>
             </Content>
           </CardItem>
         </Card>
 
-        <Form style={{ paddingLeft: 10, paddingRight: 10 }}>
-          <Textarea
-            rowSpan={2}
-            bordered
-            onChangeText={newComment => this.setState({ newComment })}
-            value={this.state.newComment}
-            placeholder="Comment..."
-            placeholderTextColor="#aabbcc"
-          />
-          <Button
-            style={{
-              backgroundColor: "#FF3879",
-              marginTop: 3,
-              marginBottom: 3,
-              alignSelf: "flex-end"
-            }}
-            onPress={() => {
-              if(this.state.newComment==""){
-                alert("comment is null")
-              }
-              else{
-                this.addComment(
-                  this.state.newComment,
-                  new Date().toString().substr(4, 12),
-                  moment().format("hh:mm a")
-                ),
-                  this.setState({ newComment: "" });
-              }
-              
-            }}
-          >
-            <Text style={{ color: "white", fontSize: 14 }}> Send </Text>
-          </Button>
-        </Form>
 
         <List
           enableEmptySections
@@ -377,12 +228,9 @@ _handleSetInterest(number){
             </ListItem>
           )}
           renderRightHiddenRow={data => (
-            <Button 
-              full
-              onPress={() => {
-                this.report(this.state.keyData,data.key,"comment")
-              }}>
-              <Icon name="information-circle" />
+            <Button full danger
+            onPress={ () => {this.deletecomment(this.state.keyData, data.key)}}>
+              <Icon name="md-trash" />
             </Button>
           )}
           rightOpenValue={-75}

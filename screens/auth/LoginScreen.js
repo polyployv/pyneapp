@@ -17,10 +17,23 @@ import Icon from 'react-native-vector-icons/FontAwesome'
 
 
 export default class Login extends React.Component {
-  static navigationOptions = {
-		header: null
-	  };
-
+  
+  static navigationOptions = ({ navigation }) => {
+    return {
+        title: null ,   
+        headerStyle: {
+          backgroundColor: '#ffe3e3',
+        },
+        headerRight: (
+            <Text style={{ paddingRight: 10}} onPress={() => navigation.navigate('CategoriesControl')}>
+            <Image style={{height: 15, width: 15,}}
+            source={require('../../assets/images/database-administrator.png')}
+            />
+            </Text>
+            
+        )  
+    };
+  };
 isUserEqualGG = (thisuser, firebaseUser) => {
     if (firebaseUser) {
       var providerData = firebaseUser.providerData;
@@ -101,7 +114,7 @@ onSignInGG = googleUser => {
                       10:0,
                       11:0,
                       12:0
-                    }
+                    },
                   })
                   .then(function(snapshot){
                     console.log('Snapshot',snapshot);
@@ -166,7 +179,7 @@ signInWithFacebook = async() =>{
                   .database()
                   .ref('/Users/'+ key) 
                   .set({
-                    uid: userInfo.id,
+                    uid: key,
                     email: userInfo.email,
                     profile_picture: userInfo.picture.data.url,
                     first_name: userInfo.first_name,
@@ -185,8 +198,10 @@ signInWithFacebook = async() =>{
                       10:0,
                       11:0,
                       12:0
+                    },
+                    likes:{
+                      1: "-LatzfBxzsGzOG_ascfE",
                     }
-                    
                   })
         
             this.props.navigation.navigate("ProfileScreen", {'dataKey': key});     

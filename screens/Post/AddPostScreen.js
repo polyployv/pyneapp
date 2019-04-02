@@ -1,23 +1,7 @@
 import React from "react";
-import { StyleSheet, Text, ListView } from "react-native";
-import {
-  Container,
-  Content,
-  CheckBox,
-  Body,
-  Form,
-  Input,
-  Item,
-  Button,
-  Icon,
-  ListItem,
-  Textarea,
-  Card,
-  CardItem,
-  Picker,
-  DatePicker,
-  Header
-} from "native-base";
+import { StyleSheet, Text, ListView, View } from "react-native";
+import { Container, Content, CheckBox, Body, Form, Input, Item, Button, Icon, ListItem, 
+  Textarea, Card, CardItem, Picker, DatePicker, } from "native-base";
 import * as firebase from "firebase";
 import moment from "moment";
 
@@ -46,7 +30,9 @@ export default class AddPostScreen extends React.Component {
       location: "",
       subViewData: [],
       keyData: "",
-      userId: "",
+      userdata: "",
+      numberOfinterest: 0,
+      interests: ""
     };
     this.setDate = this.setDate.bind(this);
     this._handleSelectSubcategory = this._handleSelectSubcategory.bind(this);
@@ -84,6 +70,10 @@ export default class AddPostScreen extends React.Component {
       })
     await firebase.database().ref('/Categoreis/').off()
     await this.setState({listViewData:newData})
+    
+    await firebase.database().ref("Users/" + firebase.auth().currentUser.uid).on("value", snapshot => {
+      this.setState({ userdata: snapshot.val(), numberOfinterest: snapshot.val().interests_number});
+    });
   };
 
   _handleSelectSubcategory = async categorykey => {
@@ -99,7 +89,7 @@ export default class AddPostScreen extends React.Component {
       this.setState({ selectedcat: snapshot.val().categoryname });
     });
   };
-  addRow(name, txt, ty, cat, subcat, edate, lo, d, t) {
+  addRow(name, txt, type, catkey,cat, subcat, edate, location, date, time) {
     var key = firebase
       .database()
       .ref("/Posts")
@@ -112,18 +102,27 @@ export default class AddPostScreen extends React.Component {
       .set({
         topicname: name,
         text: txt,
-        posttype: ty,
+        posttype: type,
         eventdate: edate,
         categoryname: cat,
         subcategoryname: subcat,
-        eventlocation: lo,
-        date: d,
-        time: t,
-        uid: firebase.auth().currentUser.uid,
-        views: 0
+        eventlocation: location,
+        date: date,
+        time: time,
+        userinfo: {
+          uid: this.state.userdata.uid,
+          first_name: this.state.userdata.first_name,
+          last_name: this.state.userdata.last_name,
+          profile_picture: this.state.userdata.profile_picture,
+        },
+        views: 0,
+        report: 0,
       });
     this.state.keyData = key;
-    
+    this._handleSetInterest(catkey)
+  }
+  _handleSetInterest(catkey){
+    firebase.database().ref("/Users/" + firebase.auth().currentUser.uid + "/interests_number/").child(this.state.categorykey).set(this.state.numberOfinterest[catkey]+7)
   }
   setType(check) {
     if (check == true) {
@@ -197,7 +196,7 @@ export default class AddPostScreen extends React.Component {
                 </Body>
               </ListItem>
               {this.state.checked ? (
-                <Content>
+                <View>
                   <Item style={{ borderColor: "transparent" }}>
                   <Icon name="md-calendar"
                     style={{color: '#FFE3E3', marginLeft: 40}} />
@@ -228,7 +227,7 @@ export default class AddPostScreen extends React.Component {
                       placeholderTextColor="#d3d3d3"
                     />
                   </Item>
-                </Content>
+                </View>
               ) : null}
               <Item
                 style={{
@@ -335,6 +334,7 @@ export default class AddPostScreen extends React.Component {
                     this.state.newTopic,
                     this.state.newText,
                     this.state.postType,
+                    this.state.categorykey,
                     this.state.selectedcat,
                     this.state.selectedsubcat,
                     this.state.chosenDate.toString().substr(4, 12),
@@ -344,6 +344,7 @@ export default class AddPostScreen extends React.Component {
                   );
                   this.props.navigation.navigate("PostDetailsScreen", {
                     dataKey: this.state.keyData,  
+                    categoryname: this.state.selectedcat
                   });
                   this.setState({ 
                     newTopic: "",
