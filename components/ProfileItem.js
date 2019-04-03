@@ -59,7 +59,8 @@ const styles = StyleSheet.create({
 		paddingTop: 25,
 		paddingBottom: 5,
 		color: '#363636',
-		fontSize: 15,
+		fontSize: 18,
+		fontWeight: 'bold',
 		textAlign: 'center'
 	},
 	description: {

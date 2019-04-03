@@ -1,9 +1,18 @@
 import React from 'react';
+import LoginScreen from './screens/auth/LoginScreen';
+import reducers from './redux/reducers';
+import thunkMiddleware from 'redux-thunk';
+import {Provider} from 'react-redux';
+import {createStore,applyMiddleware} from 'redux';
 import { Platform, StatusBar, StyleSheet, View } from 'react-native';
 import { AppLoading, Asset, Font, Icon } from 'expo';
-import AppNavigator from './navigation/MainTabNavigator';
+
 import ApiKeys from './constants/ApiKeys';
 const firebase = require('firebase')
+const middleware = applyMiddleware(thunkMiddleware)
+const store = createStore(reducers, middleware);
+console.disableYellowBox = true;
+
 export default class App extends React.Component {
    constructor(props) {
      super(props);
@@ -28,7 +37,10 @@ export default class App extends React.Component {
       return (
         <View style={styles.container}>
           {Platform.OS === 'ios' && <StatusBar barStyle="default" />}
-          <AppNavigator />
+          <Provider store={store}>
+          <LoginScreen />
+          </Provider>
+          
         </View>
       );
     }

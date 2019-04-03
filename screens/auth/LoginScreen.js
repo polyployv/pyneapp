@@ -9,17 +9,90 @@ import {
   TouchableOpacity,
   View,
   AsyncStorage,
-
 } from 'react-native';
 import * as firebase from 'firebase';
-// import { Icon } from 'react-native-elements'
+import {connect} from 'react-redux';
+import {login} from '../../redux/actions'
 import Icon from 'react-native-vector-icons/FontAwesome'
+import RootNavigator from '../../navigation/RootNavigator';
 
-
-export default class Login extends React.Component {
+class LoginScreen extends React.Component {
   static navigationOptions = {
 		header: null
-	  };
+    };
+  state ={}
+
+componentWillMount(){
+  firebase.auth().onAuthStateChanged((user)=>{
+    if(user!=null){
+      this.props.dispatch(login(user))
+    }
+  });
+}
+login = async() =>{
+  try {
+    const result = {
+    type,
+    token,
+    expires,
+    permissions,
+    declinedPermission,
+  } = await Expo.Facebook.logInWithReadPermissionsAsync(
+    '355951551902795',
+    { permissions: ['public_profile','user_birthday','email','user_photos'] }
+  );
+  if (type === 'success') {
+    console.log(result)
+    // Build Firebase credential with the Facebook access token.
+    const credential = firebase.auth.FacebookAuthProvider.credential(token);
+        // Sign in with credential from the Facebook user.
+    firebase.auth().signInAndRetrieveDataWithCredential(credential)
+    .catch((error) => {
+      console.log(error)
+    })
+            // const response = await fetch(`https://graph.facebook.com/me/?fields=id,first_name,last_name,birthday,email,picture.width(5000),name&access_token=${token}`);
+            // const userInfo = await response.json();
+            // this.setState({userInfo});
+            // var key = firebase.auth().currentUser.uid;
+            // firebase
+            //     .database()
+            //     .ref('/Users/'+ key) 
+            //     .set({
+                  // uid: key,
+                  // email: userInfo.email,
+                  // profile_picture: userInfo.picture.data.url,
+                  // first_name: userInfo.first_name,
+                  // last_name: userInfo.last_name,
+                  // birthday: userInfo.birthday,
+                  // created_at: Date.now(),
+                  // interests_number: {
+                  //   1:0,
+                  //   2:0,
+                  //   3:0,
+                  //   4:0,
+                  //   5:0,
+                  //   6:0,
+                  //   7:0,
+                  //   8:0,
+                  //   9:0,
+                  //   10:0,
+                  //   11:0,
+                  //   12:0
+                  // },
+                  
+                
+                  
+            //     })
+      
+          // this.props.navigation.navigate("RecommenderScreen", {'dataKey': key});     
+  } else {
+    // type === 'cancel'
+  }
+  } catch ({ message }) {
+  alert(`Facebook Login Error: ${message}`);
+  }
+  
+}
 
 isUserEqualGG = (thisuser, firebaseUser) => {
     if (firebaseUser) {
@@ -29,23 +102,6 @@ isUserEqualGG = (thisuser, firebaseUser) => {
           providerData[i].providerId ===
             firebase.auth.GoogleAuthProvider.PROVIDER_ID &&
           providerData[i].uid === thisuser.uid 
-        )
-         {
-          // We don't need to reauth the Firebase connection.
-          return true;
-        }
-      }
-    }
-    return false;
-  };
-  isUserEqualFB = (thisuser, firebaseUser) => {
-    if (firebaseUser) {
-      var providerData = firebaseUser.providerData;
-      for (var i = 0; i < providerData.length; i++) {
-        if (
-          providerData[i].providerId === 
-            firebase.auth.FacebookAuthProvider.PROVIDER_ID &&
-          providerData[i].uid === thisuser.userId
         )
          {
           // We don't need to reauth the Firebase connection.
@@ -86,6 +142,7 @@ onSignInGG = googleUser => {
                     email: result.user.email,
                     first_name: result.additionalUserInfo.profile.given_name,
                     last_name: result.additionalUserInfo.profile.family_name,
+                    birthday: result.additionalUserInfo.profile.birthday,
                     profile_picture: result.additionalUserInfo.profile.picture+"?sz=5000",
                     created_at: Date.now(),
                     interests_number: {
@@ -127,7 +184,7 @@ onSignInGG = googleUser => {
               var credential = error.credential;
               // ...
             });
-       this.props.navigation.navigate("ProfileScreen", {'dataKey': key});    
+       this.props.navigation.navigate("RecommenderScreen", {'dataKey': key});    
             
         } else {
           console.log('User already signed-in Firebase.');
@@ -135,75 +192,10 @@ onSignInGG = googleUser => {
       }.bind(this)
     );
   };
-
-                                             //facebook
-signInWithFacebook = async() =>{
-    try {
-      const result = {
-      type,
-      token,
-      expires,
-      permissions,
-      declinedPermission,
-    } = await Expo.Facebook.logInWithReadPermissionsAsync(
-      '355951551902795',
-      { permissions: ['public_profile','user_birthday','email','user_photos'] }
-    );
-    if (type === 'success') {
-      console.log(result)
-      // Build Firebase credential with the Facebook access token.
-      const credential = firebase.auth.FacebookAuthProvider.credential(token);
-          // Sign in with credential from the Facebook user.
-      firebase.auth().signInAndRetrieveDataWithCredential(credential)
-      .catch((error) => {
-        console.log(error)
-      })
-              const response = await fetch(`https://graph.facebook.com/me/?fields=id,first_name,last_name,email,picture.width(5000),name&access_token=${token}`);
-              const userInfo = await response.json();
-              this.setState({userInfo});
-              var key = firebase.auth().currentUser.uid;
-              firebase
-                  .database()
-                  .ref('/Users/'+ key) 
-                  .set({
-                    uid: userInfo.id,
-                    email: userInfo.email,
-                    profile_picture: userInfo.picture.data.url,
-                    first_name: userInfo.first_name,
-                    last_name: userInfo.last_name,
-                    created_at: Date.now(),
-                    interests_number: {
-                      1:0,
-                      2:0,
-                      3:0,
-                      4:0,
-                      5:0,
-                      6:0,
-                      7:0,
-                      8:0,
-                      9:0,
-                      10:0,
-                      11:0,
-                      12:0
-                    }
-                    
-                  })
-        
-            this.props.navigation.navigate("ProfileScreen", {'dataKey': key});     
-    } else {
-      // type === 'cancel'
-    }
-    } catch ({ message }) {
-    alert(`Facebook Login Error: ${message}`);
-    }
-    
-  }
-    
-                                                //google
   signInWithGoogleAsync = async () => {
     try {
       const result = await Expo.Google.logInAsync({
-        // androidClientId: YOUR_CLIENT_ID_HERE,
+        
         behavior: 'web',
         iosClientId: '33590640481-25088pa47chgpsnfd0b9vnn0v5tcjlt3.apps.googleusercontent.com', 
         scopes: ['profile', 'email']
@@ -222,14 +214,16 @@ signInWithFacebook = async() =>{
 
 
 
-
+  
 
     render() {
-      const{Navigate} = this.props
+      if(this.props.loggedIn){
+        return(
+          <RootNavigator/>
+  
+        )
+      }
     return(
-      // this.state.showSpinner ? 
-      // <View style={styles.container}><ActivityIndicator animating={this.state.showSpinner} /></View> :
-      //pyne logo 
       <View style={styles.container}>
             <Image source={require('../../assets/images/pynelogo.png')}
               style={styles.welcomeImage}
@@ -239,7 +233,7 @@ signInWithFacebook = async() =>{
                   name="facebook"
                   backgroundColor="#3b5998"
                   size={30}
-                  onPress={this.signInWithFacebook.bind(this)}>
+                  onPress={this.login.bind(this)}>
                   Login with Facebook
             </Icon.Button>
            
@@ -256,7 +250,8 @@ signInWithFacebook = async() =>{
     );
   }
   }
-  
+
+
 
 const styles = StyleSheet.create({
   container: {
@@ -275,3 +270,10 @@ const styles = StyleSheet.create({
     paddingTop: 60,
   }
 });
+function mapStateToProps(state) {
+    return {
+      loggedIn: state.loggedIn
+    };
+  }
+  
+export default connect(mapStateToProps)(LoginScreen);  

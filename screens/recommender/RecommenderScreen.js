@@ -1,90 +1,74 @@
 import React from 'react';
-import { StyleSheet, View, ImageBackground, Dimensions } from 'react-native';
-import CardStack, { Card } from 'react-native-card-stack-swiper';
-import City from '../../components/City';
-import Filters from '../../components/Filters';
-import CardItem from '../../components/CardItem';
-import Demo from '../../assets/data/demo.js';
-import Icon from 'react-native-vector-icons/FontAwesome'
+import styles from '../../styles'
 import * as firebase from 'firebase';
+import { connect } from 'react-redux';
+import { getCards } from '../../redux/actions'
+import SwipeCards from 'react-native-swipe-cards'
+import Cards from '../../components/Cards.js'
+import NoCards from '../../components/NoCards.js'
 
-export default class RecommenderScreen extends React.Component {
-	static navigationOptions = {
-		title:  'Recommender',
-		headerStyle: {
-			backgroundColor: '#ffe3e3',
-		},
-		headerTitleStyle: {
-			color: '#444FAD',
-		},
-	  };
+import { 
+  Text, 
+  View,
+  Image
+} from 'react-native';
 
-	state = {
-		data: Demo
-	};
-	constructor(props) {
-		super(props);
-		this.state = {
-		  userdata: ""
-		}
-	  }
-	render() {
-		return (
-			<ImageBackground
-				source={require('../../assets/images/bg.png')}
-				style={styles.bg}
-			>
-				<View style={styles.container}>
-					
+class RecommenderScreen extends React.Component {
 
-					<CardStack
-						loop={true}
-						verticalSwipe={false}
-						renderNoMoreCards={() => {
-							return null;
-						}}
-						ref={swiper => {
-							this.swiper = swiper;
-						}}
-					>
-						{this.state.data.map((item, index) => {
-							return (
-								<Card key={index}>
-									<CardItem
-										image={item.image}
-										name={item.name}
-										description={item.description}
-										matches={item.match}
-										actions
-										onPressLeft={() => {
-											this.swiper.swipeLeft();
-										}}
-										onPressRight={() => {
-											this.swiper.swipeRight();
-										}}
-									/>
-								</Card>
-							);
-						})}
-					</CardStack>
-				</View>
-			</ImageBackground>
-		);
-	}
+  componentWillMount(){
+    this.props.dispatch(getCards(this.props.user.geocode))
+  }
+
+  handleYup (card) {
+    firebase.database().ref('cards/' + this.props.user.id + '/swipes').update({ [card.id]: true });
+    this.checkMatch(card)
+  }
+
+  handleNope (card) {
+    firebase.database().ref('cards/' + this.props.user.id + '/swipes').update({ [card.id]: false });
+  }
+
+  checkMatch(card){
+    firebase.database().ref('cards/' + card.id + '/swipes/' + this.props.user.id).once('value', (snap) => {
+      if(snap.val() == true){
+        var me = {
+          id: this.props.user.id,
+          photoUrl: this.props.user.photoUrl,
+          name: this.props.user.name
+        }
+        var user = {
+          id: card.id,
+          photoUrl: card.photoUrl,
+          name: card.name
+        }
+        firebase.database().ref('cards/' + this.props.user.id + '/chats/' + card.id).set({user: user});
+        firebase.database().ref('cards/' + card.id + '/chats/' + this.props.user.id).set({user: me});
+      }
+    });
+  }
+
+  render() {
+    return (
+      <SwipeCards
+        cards={this.props.cards}
+        stack={false}
+        renderCard={(cardData) => <Cards {...cardData} />}
+        renderNoMoreCards={() => <NoCards />}
+        showYup={false}
+        showNope={false}
+        handleYup={this.handleYup.bind(this)}
+        handleNope={this.handleNope.bind(this)}
+        handleMaybe={this.handleMaybe}
+        hasMaybeAction={false}/>
+    )
+  }
 }
 
-const styles = StyleSheet.create({
-	container: { marginHorizontal: 10 },
-	bg: {
-		flex: 1,
-		resizeMode: 'cover',
-		width: Dimensions.get('window').width,
-		height: Dimensions.get('window').height
-	},
-	top: {
-		paddingTop: 50,
-		marginHorizontal: 10,
-		flexDirection: 'row',
-		justifyContent: 'space-between'
-	}
-});
+function mapStateToProps(state) {
+  return {
+    cards: state.cards,
+    user: state.user
+  };
+}
+
+export default connect(mapStateToProps)(RecommenderScreen);
