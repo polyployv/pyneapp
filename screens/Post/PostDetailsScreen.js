@@ -45,7 +45,10 @@ export default class PostDetailsScreen extends React.Component {
       categoryname: this.props.navigation.state.params.categoryname,
       currentUserID: firebase.auth().currentUser.uid
     });
-    this.checkCategoryKey(this.state.categoryname)
+    console.log("key: "+this.state.keyData)
+    console.log("catname: "+this.state.categoryname)
+    console.log("uid: "+this.state.currentUserID)
+    await this.checkCategoryKey(this.state.categoryname)
     this.state.like = this.checkLike(this.state.currentUserID);
     this.state.numberOflike = this.likeCount(this.state.currentUserID); 
     await firebase.database().ref("Posts/" + this.state.keyData).on("value", snapshot => {
@@ -70,6 +73,10 @@ export default class PostDetailsScreen extends React.Component {
     });
     this.viewCount();
   }
+  componentWillUnmount = async () => {
+    await firebase.database().ref("/Posts/").off();
+    await firebase.database().ref("/Users/").off();
+  };
   report(key,commentkey,text){
     Alert.alert(
       'Report',
@@ -109,6 +116,7 @@ export default class PostDetailsScreen extends React.Component {
       });
     });
     this.state.categorykey = key
+    console.log(this.state.categorykey)
   }
   renderForm() {
     if (this.state.postdata.posttype == "Event") {

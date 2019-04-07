@@ -98,7 +98,7 @@ export default class ProfileScreen extends React.Component {
     });
     const ref = firebase.database().ref("Users/" + this.state.keyData);
     ref.once("value", snapshot => {
-      console.log(snapshot.val());
+      //console.log(snapshot.val());
       this.setState({ userdata: snapshot.val() });
     });
     if (this.state.userdata.likes !== undefined) {

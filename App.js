@@ -2,6 +2,7 @@ import React from 'react';
 import { Platform, StatusBar, StyleSheet, View } from 'react-native';
 import { AppLoading, Asset, Font, Icon } from 'expo';
 import AppNavigator from './navigation/MainTabNavigator';
+import Test from './screens/profile/FriendPost';
 import ApiKeys from './constants/ApiKeys';
 const firebase = require('firebase')
 export default class App extends React.Component {
@@ -28,7 +29,7 @@ export default class App extends React.Component {
       return (
         <View style={styles.container}>
           {Platform.OS === 'ios' && <StatusBar barStyle="default" />}
-          <AppNavigator />
+          <AppNavigator/>
         </View>
       );
     }

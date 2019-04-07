@@ -11,12 +11,25 @@ export default class CategoriesControl extends React.Component {
     headerStyle: {
       backgroundColor: "#ffe3e3"
     },
-    headerRight: (
+    headerLeft: (
       <Icon name="md-mail" 
-        style={{marginRight: 15}}
+        style={{marginLeft: 15, color: '#444FAD'}}
         onPress={() => navigation.navigate('ReportList')} />
     ),
-    headerLeft: null
+    headerRight: (
+      <Icon name="md-log-out"
+        style={{marginRight: 15, color: '#444FAD'}}
+        onPress={() => {
+          firebase.auth().signOut().then(function() {
+            navigation.navigate('LoginScreen')
+            console.log("logout!!!!!!!")
+          }).catch(function(error) {
+            alert("Error")
+          });
+        }} />
+      
+    
+    ),
     }
   };
   constructor(props){
@@ -34,13 +47,19 @@ export default class CategoriesControl extends React.Component {
   }
   async componentDidMount() {    
     var that = this
-    await firebase.database().ref('/Categories/').on('child_added', function (data) {
+    firebase.database().ref('/Categories/').on('child_added', function (data) {
         var newData = [...that.state.listViewData]
         newData.push(data)
         that.setState({ listViewData: newData,
       })     
     })
   }
+  componentWillUnmount = async () => {
+    await firebase
+      .database()
+      .ref("/Categories/")
+      .off();
+  };
   addCategory(catname){
     var key 
     firebase.database().ref('/Categories/').once('value', function(snapshot) { 
@@ -63,14 +82,7 @@ export default class CategoriesControl extends React.Component {
     });
     alert("Edit "+catname+" successfully")
     await this.setState({categoryname: catname})
-    await this.setState({ listViewData: []})
-    var that = this
-    firebase.database().ref('/Categories/').on('child_added', function (data) {
-      var newData = [...that.state.listViewData]
-      newData.push(data)
-      that.setState({ listViewData: newData,
-    })     
-  })
+    await this.reflesh()
   }
   async deleteData(catname,key){
     firebase.database().ref('Posts/').on("child_added", (snapshot) => {
@@ -79,15 +91,17 @@ export default class CategoriesControl extends React.Component {
       }
     })
     firebase.database().ref('Categories/'+key).remove();
+    await this.reflesh();
+    alert("Delete successfully");
+  }
+  async reflesh(){
     await this.setState({ listViewData: []})
     var that = this
     firebase.database().ref('/Categories/').on('child_added', function (data) {
       var newData = [...that.state.listViewData]
       newData.push(data)
-      that.setState({ listViewData: newData,
-    })     
-  })
-    alert("Delete successfully")
+      that.setState({ listViewData: newData,})     
+    })
   }
   _alert(catname,key,text){
     Alert.alert(
@@ -109,7 +123,7 @@ export default class CategoriesControl extends React.Component {
           onPress: () => console.log('Cancel Pressed'),
           style: 'cancel',
         },
-        {text: 'OK', onPress: () => {
+        {text: 'Confirm', onPress: () => {
           if(text==="edit") {this.editCategory(catname)}
           else if(text==="add") {this.addCategory(catname)}
           else if(text==="delete"){this.deleteData(catname,key)}

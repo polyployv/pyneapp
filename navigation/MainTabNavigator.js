@@ -11,11 +11,10 @@ import RecommenderScreen from "../screens/recommender/RecommenderScreen";
 import ProfileScreen from "../screens/profile/ProfileScreen";
 import CategoriesControl from "../screens/admin/CategoriesControl";
 import SubcategoriesControl from "../screens/admin/SubcategoriesControl";
-import likedListScreen from "../screens/Post/likedListScreen";
 import ReportList from "../screens/admin/ReportList";
 import PostDetailsControl from "../screens/admin/PostDetailsControl";
 import PostListControl from "../screens/admin/PostListControl"
-
+import FriendPost from '../screens/profile/FriendPost';
 export const Navigator = new createStackNavigator(
   {
     LoginScreen: {screen: LoginScreen},
@@ -28,10 +27,10 @@ export const Navigator = new createStackNavigator(
     SubcategoriesListScreen: { screen: SubcategoriesListScreen },
     CategoriesControl: {screen: CategoriesControl},
     SubcategoriesControl: {screen: SubcategoriesControl},
-    likedListScreen: {screen: likedListScreen},
     ReportList: {screen: ReportList},
     PostDetailsControl: {screen: PostDetailsControl},
-    PostListControl: {screen: PostListControl}
+    PostListControl: {screen: PostListControl},
+    FriendPost: {screen: FriendPost}
   },
   {
     initialRouteName: "LoginScreen"

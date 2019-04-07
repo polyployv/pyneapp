@@ -40,25 +40,38 @@ export default class PostListControl extends React.Component {
         that.setState({ listViewData: newData })  
     })
   }
-  deletepost(key){
-    Alert.alert(
-      'Delete',
-      'Are you sure to delete this post',
-      [
-        {
-          text: 'Cancel',
-          onPress: () => console.log('Cancel Pressed'),
-          style: 'cancel',
-        },
-        {text: 'Delete', 
-            onPress: () => {
-                firebase.database().ref("Posts/" + key).remove();
-            }
-        },
-      ],
-      {cancelable: false},
-    );
-  }
+    async deletepost(key){
+        await Alert.alert(
+            'Delete',
+            'Are you sure you want to delete this post',
+            [
+                {
+                    text: 'Cancel',
+                    onPress: () => console.log('Cancel Pressed'),
+                    style: 'cancel',
+                },
+                {
+                    text: 'Delete', 
+                    onPress: () => {
+                        firebase.database().ref("Posts/" + key).remove();
+                        this.reflesh()
+                        alert("Delete Successfully")
+                    }
+                },
+            ],
+            {cancelable: false},
+        );
+        
+    }
+    async reflesh(){
+        await this.setState({ listViewData: []})
+        var that = this
+        await firebase.database().ref('/Posts/').on('child_added', function (data) {
+            var newData = [...that.state.listViewData]      
+            if(data.val().categoryname==that.state.categoryname && data.val().subcategoryname==that.state.subcategoryname) newData.push(data)
+            that.setState({ listViewData: newData })  
+        })
+    }
 
   render() {
     return (

@@ -13,11 +13,6 @@ export default class SubcategoriesControl extends React.Component {
             headerTitleStyle: {
                 color: '#444FAD',
             },
-            headerRight: (
-              <Icon name="md-mail" 
-                style={{marginRight: 15}}
-                onPress={() => navigation.navigate('ReportList')} />
-            ),
         };
       };
   constructor(props){
@@ -66,18 +61,29 @@ export default class SubcategoriesControl extends React.Component {
     await firebase.database().ref('/Categories/' + this.state.categorykey +'/Subcategories/'+this.state.subcategorykey).update({
       "subcategoryname": subcatname
     });
-    alert("Edit successfully")
+    
     await this.setState({subcategoryname: subcatname})
-    //await console.log(this.state.subcategoryname)
+    await this.reflesh();
+    alert("Edit successfully")
   }
-  deleteData(subcatname, key){
-    firebase.database().ref('/Categories/' + this.state.categorykey +'/Subcategories/'+key).remove();
-    firebase.database().ref('Posts/').on("child_added", (snapshot) => {
+  async deleteData(subcatname, key){
+    await firebase.database().ref('/Categories/' + this.state.categorykey +'/Subcategories/'+key).remove();
+    await firebase.database().ref('Posts/').on("child_added", (snapshot) => {
       if(snapshot.val().subcategoryname === subcatname){
         firebase.database().ref('Posts/'+snapshot.key).remove();
       }
     })
+    await this.reflesh();
     alert("Delete successfully")
+  }
+  async reflesh(){
+    await this.setState({ listViewData: []})
+    var that = this
+    await firebase.database().ref('/Categories/'+this.state.categorykey+'/Subcategories').on('child_added', function (data) {
+      var newData = [...that.state.listViewData]
+      newData.push(data)
+      that.setState({ listViewData: newData,})     
+    })
   }
   _alert(subcatname,key,text){
     Alert.alert(
@@ -99,7 +105,7 @@ export default class SubcategoriesControl extends React.Component {
           onPress: () => console.log('Cancel Pressed'),
           style: 'cancel',
         },
-        {text: 'OK', onPress: () => {
+        {text: 'Confirm', onPress: () => {
           if(text==="edit") {this.editSubcategory(subcatname)}
           else if(text==="add") {this.addSubcategory(subcatname)}
           else if(text==="delete"){this.deleteData(subcatname,key)}

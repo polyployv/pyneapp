@@ -22,7 +22,7 @@ export default class CategoriesListScreen extends React.Component {
                 </Text>
             ),
             headerRight: (
-                <Text style={{ marginRight: 10}} onPress={() => navigation.navigate('likedListScreen')}>
+                <Text style={{ marginRight: 10}} onPress={() => navigation.navigate('FriendPost')}>
                 <Image style={{height: 20, width: 20,}}
                     source={require('../../assets/images/menuIcon.png')}
                 />
@@ -39,8 +39,11 @@ export default class CategoriesListScreen extends React.Component {
           listViewData: [],
           categorykey: "",
           Events: [],
-          eventdate: ''
+          eventdate: '',
+          searchword: '',
+          resultQuery: []
         }
+        this.queryDatafromFirebase = this.queryDatafromFirebase.bind(this)
     }
     
     componentDidMount = async() => {
@@ -63,12 +66,26 @@ export default class CategoriesListScreen extends React.Component {
             var newData = [...that.state.listViewData]
             newData.push(data)
             that.setState({ listViewData: newData })  
-        })
-        await firebase.database().ref('/Categoreis/').off()
-        //await firebase.database().ref('/Posts/').off()       
+        })    
         
-      }
+    }
+    componentWillUnmount = async () => {
+        await firebase.database().ref("/Posts/").off();
+        await firebase.database().ref("/Categories/").off();
+    };
       
+    async queryDatafromFirebase(keyword){
+        var that = this
+        var resultQuery = []
+        await this.setState({resultQuery: []})
+        await this.setState({searchword: keyword});
+        await firebase.database().ref('/Posts/').on('child_added', function(result){
+            if(result.val().topicname.indexOf(keyword) !== -1){
+            resultQuery.push(result)
+            that.setState({resultQuery: resultQuery})
+            }
+        })
+    }
     render() {
         return (
             <Container>
@@ -130,15 +147,16 @@ export default class CategoriesListScreen extends React.Component {
                 <Item style={{alignSelf: 'center', borderColor:'transparent', marginTop:10}}>
                 <Item rounded style={{width: "80%"}}>
                     <Icon name="ios-search" />
-                    <Input placeholder="Search" />
+                    <Input placeholder="Search" value={this.state.searchword} onChangeText={ (value) => {this.queryDatafromFirebase(value)}}/>
                 </Item>
                 <Button rounded 
                     style={{backgroundColor: '#FF3879', marginTop: 5, marginLeft: 5 }}
-                    onPress={ () => {this.props.navigation.navigate('AddPostScreen')}}>
+                    onPress={ () => { this.props.navigation.navigate('AddPostScreen')}}>
                     <Icon name='add' />
                 </Button>
                 </Item>
                 <Content style={{marginLeft: 10, marginRight: 10, marginTop: 10}}>      
+                { this.state.searchword === '' ? (
                     <FlatList
                         data={ this.state.listViewData }
                         renderItem={ ({item}) =>
@@ -157,6 +175,27 @@ export default class CategoriesListScreen extends React.Component {
                         </View> }
                         numColumns={2}
                     />
+                
+                ) : ( this.state.resultQuery.map( (data, index) => {
+                    return(
+                        <ListItem key={index}
+                            style={{borderColor:'transparent'}}>
+                            <Badge style={{backgroundColor: '#FF3879'}}>
+                                <Text style={{color: 'white'}}>{index+1}</Text>
+                            </Badge>
+                            <Text key={index}
+                                style={{fontSize:18,color: '#444FAD', marginLeft: 5}}
+                                onPress={ () => {this.props.navigation.navigate(
+                                    'PostDetailsScreen',  {
+                                        'dataKey': data.key, 
+                                        'categoryname': data.val().categoryname 
+                                    })}
+                                }>
+                                    {data.val().topicname}
+                                </Text>
+                        </ListItem>
+                    )
+                })) }
                 </Content>
             </Container>
         );

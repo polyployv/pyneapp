@@ -63,10 +63,10 @@ export default class PostDetailsControl extends React.Component {
     });   
     
   }
-  deletecomment(keypost, keycomment){
+  configcomment(keypost, keycomment){
     Alert.alert(
-      'Delete',
-      'Do you want to delete this comment',
+      'Update this Report',
+      'Do you want to delete or ignore this comment?',
       [
         {
           text: 'Cancel',
@@ -75,14 +75,67 @@ export default class PostDetailsControl extends React.Component {
         },
         {text: 'Delete', 
             onPress: () => {
-              firebase.database().ref("Posts/" + keypost+"/comments/"+keycomment).remove();
+              Alert.alert(
+                'Delete',
+                'Are you sure you want to delete this comment',
+                [
+                  {
+                    text: 'Cancel',
+                    onPress: () => console.log('Cancel Pressed'),
+                    style: 'cancel',
+                  },
+                  {
+                    text: 'Delete',
+                    onPress: () => {
+                      firebase.database().ref("Posts/" + keypost+"/comments/"+keycomment).remove();
+                      this.reflesh();
+                      alert("Delete successfully");
+                    }
+                  }
+                ]
+              ) 
             }
         },
+        {
+          text: 'Ignore',
+          onPress: () => {
+            Alert.alert(
+              'Ignor',
+              'Are you sure you want to ignor this comment',
+              [
+                {
+                  text: 'Cancel',
+                  onPress: () => console.log('Cancel Pressed'),
+                  style: 'cancel',
+                },
+                {
+                  text: 'Ignor',
+                  onPress: () => {
+                    firebase.database().ref("Posts/" + keypost+"/comments/"+keycomment).update({
+                      "report": 0
+                    });
+                    this.reflesh()
+                  }
+                }
+              ]
+            ) 
+          }
+          
+        }
+
       ],
       {cancelable: false},
     );
   }
-
+  async reflesh(){
+    await this.setState({ listViewData: []})
+    var that = this;
+    await firebase.database().ref("Posts/" + this.state.keyData + "/comments/").on("child_added", function(data) {
+        var newData = [...that.state.listViewData];
+        newData.push(data);
+        that.setState({ listViewData: newData });
+    });  
+  }
   checkCategoryKey(name){
     var key
     firebase.database().ref('/Categories/').orderByChild('categoryname').equalTo(name).on("value", function(snapshot) {
@@ -202,7 +255,6 @@ export default class PostDetailsControl extends React.Component {
           renderRow={data => (
             
             <ListItem avatar style={{ paddingLeft: 5, paddingRight: 10, borderColor:'transparent' }}>
-              
               <Left>
                 <Thumbnail source={{ uri: data.val().userinfo.profile_picture }} />
               </Left>
@@ -224,13 +276,18 @@ export default class PostDetailsControl extends React.Component {
                 <Text note style={{ color: "#aabbcc", fontSize: 12 }}>
                   {data.val().commenttime}
                 </Text>
+                {
+                  data.val().report>0? (
+                    <Text style={{ color: "#FF3879", fontSize: 12 }}>This comment was reported</Text>
+                  ):null
+                }
               </Right>
             </ListItem>
           )}
           renderRightHiddenRow={data => (
             <Button full danger
-            onPress={ () => {this.deletecomment(this.state.keyData, data.key)}}>
-              <Icon name="md-trash" />
+            onPress={ () => {this.configcomment(this.state.keyData, data.key)}}>
+              <Icon name="md-build" />
             </Button>
           )}
           rightOpenValue={-75}
