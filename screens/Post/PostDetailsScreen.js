@@ -134,16 +134,13 @@ export default class PostDetailsScreen extends React.Component {
     this._handleSetInterest(this.state.numberOfinterest)
   }
   
-  addComment(data, date, time) {
-    var key = firebase
-      .database()
-      .ref("Posts/" + this.state.keyData + "/comments")
-      .push().key;
-    firebase
-      .database()
-      .ref("Posts/" + this.state.keyData + "/comments")
-      .child(key)
-      .set({ 
+  async addComment(data, date, time) {
+    if(data==""){
+      alert("Please enter your comment")
+    }
+    else{
+      var key = await firebase.database().ref("Posts/" + this.state.keyData + "/comments").push().key;
+      await firebase.database().ref("Posts/" + this.state.keyData + "/comments").child(key).set({ 
         commenttext: data, 
         commentdate: date, 
         commenttime: time, 
@@ -155,8 +152,10 @@ export default class PostDetailsScreen extends React.Component {
         },
         report: 0,
       });
+      await this.setState({ newComment: "" });
       this.state.numberOfinterest = this.state.numberOfinterest+3
       this._handleSetInterest(this.state.numberOfinterest)
+    }
   }
   checkLike  = (uid) => {
     var exists 
@@ -335,18 +334,11 @@ _handleSetInterest(number){
               alignSelf: "flex-end"
             }}
             onPress={() => {
-              if(this.state.newComment==""){
-                alert("comment is null")
-              }
-              else{
-                this.addComment(
-                  this.state.newComment,
-                  new Date().toString().substr(4, 12),
-                  moment().format("hh:mm a")
-                ),
-                  this.setState({ newComment: "" });
-              }
-              
+              this.addComment(
+                this.state.newComment,
+                new Date().toString().substr(4, 12),
+                moment().format("hh:mm a")
+              )  
             }}
           >
             <Text style={{ color: "white", fontSize: 14 }}> Send </Text>

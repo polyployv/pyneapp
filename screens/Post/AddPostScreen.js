@@ -74,6 +74,7 @@ export default class AddPostScreen extends React.Component {
     await firebase.database().ref("Users/" + firebase.auth().currentUser.uid).on("value", snapshot => {
       this.setState({ userdata: snapshot.val(), numberOfinterest: snapshot.val().interests_number});
     });
+    console.log(this.state.selectedcat)
   };
 
   _handleSelectSubcategory = async categorykey => {
@@ -89,24 +90,25 @@ export default class AddPostScreen extends React.Component {
       this.setState({ selectedcat: snapshot.val().categoryname });
     });
   };
-  addRow(name, txt, type, catkey,cat, subcat, edate, location, date, time) {
-    var key = firebase
-      .database()
-      .ref("/Posts")
-      .push().key;
+  async addRow(name, txt, type, catkey,catname, subcatname, eventdate, location, date, time) {
+    if(name==""){ alert("Please enter the topic name") }
+    else if(type=="Event" && (new Date(eventdate))-(new Date(date)) < 0){ alert("This date has passed") }
+    else if(type=="Event" && eventdate==""){ alert("Please select the event date") }
+    else if(type=="Event" && location==""){ alert("Please enter the event location") }
+    else if(catname==""){ alert("Please choose category") }
+    else if(subcatname==""){ alert("Please choose subcategory") }
+    else if(txt==""){ alert("Please enter the post details") }
+    else{
+    this.state.keyData = await firebase.database().ref("/Posts").push().key;
     
-    firebase
-      .database()
-      .ref("/Posts")
-      .child(key)
-      .set({
+    firebase.database().ref("/Posts").child(this.state.keyData).set({
         topicname: name,
         text: txt,
         posttype: type,
-        eventdate: edate,
-        categoryname: cat,
-        subcategoryname: subcat,
+        eventdate: eventdate,
         eventlocation: location,
+        categoryname: catname,
+        subcategoryname: subcatname,   
         date: date,
         time: time,
         userinfo: {
@@ -118,8 +120,21 @@ export default class AddPostScreen extends React.Component {
         views: 0,
         report: 0,
       });
-    this.state.keyData = key;
-    this._handleSetInterest(catkey)
+    await this._handleSetInterest(catkey)
+    await this.setState({ 
+      newTopic: "",
+      newText: "",
+      checked: "",
+      chosenDate: "",
+      location: "",
+      selectedcat: "",
+      selectedsubcat: ""
+    });  
+    await this.props.navigation.navigate("PostDetailsScreen", {
+      dataKey: this.state.keyData,  
+      categoryname: this.state.selectedcat
+    });
+  } 
   }
   _handleSetInterest(catkey){
     firebase.database().ref("/Users/" + firebase.auth().currentUser.uid + "/interests_number/").child(this.state.categorykey).set(this.state.numberOfinterest[catkey]+7)
@@ -329,8 +344,8 @@ export default class AddPostScreen extends React.Component {
                 </Form>
               </Content>
               <Button
-                onPress={() => {
-                  this.addRow(
+                onPress={async() => {
+                  await this.addRow(
                     this.state.newTopic,
                     this.state.newText,
                     this.state.postType,
@@ -342,19 +357,7 @@ export default class AddPostScreen extends React.Component {
                     new Date().toString().substr(4, 12),
                     moment().format("hh:mm a")
                   );
-                  this.props.navigation.navigate("PostDetailsScreen", {
-                    dataKey: this.state.keyData,  
-                    categoryname: this.state.selectedcat
-                  });
-                  this.setState({ 
-                    newTopic: "",
-                    newText: "",
-                    checked: undefined,
-                    chosenDate: "",
-                    location: "",
-                    selectedcat: "",
-                    selectedsubcat: ""
-                  });                 
+                                
                 }}
                 style={{
                   backgroundColor: "#FF3879",

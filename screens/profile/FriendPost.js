@@ -11,7 +11,7 @@ class FriendPost extends React.Component {
       headerStyle: {
         backgroundColor: "#ffe3e3"
       },
-      headerTitleStyle: {
+        headerTitleStyle: {
         color: "#444FAD"
       }
     };

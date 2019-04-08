@@ -146,6 +146,7 @@ export default class ReportList extends React.Component {
                       report: 0
                     });
                   this.reflesh();
+                  alert("Ignor successfully");
                 }
               }
             ]);
@@ -202,8 +203,8 @@ export default class ReportList extends React.Component {
                               }
                             });
                       });
-                    console.log("delete complete");
                     this.reflesh();
+                    alert("Delete successfully");
                   }
                 }
               ]
@@ -221,14 +222,31 @@ export default class ReportList extends React.Component {
               },
               {
                 text: "Confirm",
-                onPress: () => {
-                  firebase
-                    .database()
-                    .ref("Posts/" + key)
-                    .update({
-                      report: 0
-                    });
-                  this.reflesh();
+                onPress: async() => {
+                    await firebase
+                      .database()
+                      .ref("/Posts/")
+                      .on("child_added", function(data) {
+                        data.val().comments !== undefined &&
+                          firebase
+                            .database()
+                            .ref("/Posts/" + data.key + "/comments/")
+                            .on("child_added", function(data_commend) {
+                              if (data_commend.key === key) {
+                                firebase
+                                  .database()
+                                  .ref(
+                                    "/Posts/" +
+                                      data.key +
+                                      "/comments/" +
+                                      data_commend.key
+                                  )
+                                  .update({report: 0});
+                              }
+                            });
+                      });
+                  await this.reflesh();
+                  await alert("Ignor successfully");
                 }
               }
             ]);

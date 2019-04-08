@@ -80,7 +80,7 @@ export default class CategoriesControl extends React.Component {
     await firebase.database().ref('/Categories/' + this.state.categorykey).update({
       "categoryname": catname
     });
-    alert("Edit "+catname+" successfully")
+    alert("Edit successfully")
     await this.setState({categoryname: catname})
     await this.reflesh()
   }
@@ -153,7 +153,6 @@ export default class CategoriesControl extends React.Component {
                 }
                 else{
                   this._alert(this.state.newCategory,"",'add')
-                  //this.addCategory( this.state.newCategory );
                   this.setState({ newCategory: "" });
                   this.setState({ clicked: !this.state.clicked });
                 }
@@ -174,7 +173,7 @@ export default class CategoriesControl extends React.Component {
             onPress={ () => {
               if(this.state.newcategoryname==""){
                 alert("Categoryname is empty")
-            }
+              }
             else{
                 this._alert(this.state.newcategoryname,"","edit")
                 this.setState({ 
