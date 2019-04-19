@@ -1,23 +1,7 @@
 import React from "react";
-import { StyleSheet, Text, ListView } from "react-native";
-import {
-  Container,
-  Content,
-  CheckBox,
-  Body,
-  Form,
-  Input,
-  Item,
-  Button,
-  Icon,
-  ListItem,
-  Textarea,
-  Card,
-  CardItem,
-  Picker,
-  DatePicker,
-  Header
-} from "native-base";
+import { StyleSheet, Text, ListView, View } from "react-native";
+import { Container, Content, CheckBox, Body, Form, Input, Item, Button, Icon, ListItem, 
+  Textarea, Card, CardItem, Picker, DatePicker, } from "native-base";
 import * as firebase from "firebase";
 import moment from "moment";
 
@@ -46,7 +30,9 @@ export default class AddPostScreen extends React.Component {
       location: "",
       subViewData: [],
       keyData: "",
-      userId: "",
+      userdata: "",
+      numberOfinterest: 0,
+      interests: ""
     };
     this.setDate = this.setDate.bind(this);
     this._handleSelectSubcategory = this._handleSelectSubcategory.bind(this);
@@ -84,6 +70,11 @@ export default class AddPostScreen extends React.Component {
       })
     await firebase.database().ref('/Categoreis/').off()
     await this.setState({listViewData:newData})
+    
+    await firebase.database().ref("Users/" + firebase.auth().currentUser.uid).on("value", snapshot => {
+      this.setState({ userdata: snapshot.val(), numberOfinterest: snapshot.val().interests_number});
+    });
+    console.log(this.state.selectedcat)
   };
 
   _handleSelectSubcategory = async categorykey => {
@@ -99,31 +90,54 @@ export default class AddPostScreen extends React.Component {
       this.setState({ selectedcat: snapshot.val().categoryname });
     });
   };
-  addRow(name, txt, ty, cat, subcat, edate, lo, d, t) {
-    var key = firebase
-      .database()
-      .ref("/Posts")
-      .push().key;
+  async addRow(name, txt, type, catkey,catname, subcatname, eventdate, location, date, time) {
+    if(name==""){ alert("Please enter the topic name") }
+    else if(type=="Event" && (new Date(eventdate))-(new Date(date)) < 0){ alert("This date has passed") }
+    else if(type=="Event" && eventdate==""){ alert("Please select the event date") }
+    else if(type=="Event" && location==""){ alert("Please enter the event location") }
+    else if(catname==""){ alert("Please choose category") }
+    else if(subcatname==""){ alert("Please choose subcategory") }
+    else if(txt==""){ alert("Please enter the post details") }
+    else{
+    this.state.keyData = await firebase.database().ref("/Posts").push().key;
     
-    firebase
-      .database()
-      .ref("/Posts")
-      .child(key)
-      .set({
+    firebase.database().ref("/Posts").child(this.state.keyData).set({
         topicname: name,
         text: txt,
-        posttype: ty,
-        eventdate: edate,
-        categoryname: cat,
-        subcategoryname: subcat,
-        eventlocation: lo,
-        date: d,
-        time: t,
-        uid: firebase.auth().currentUser.uid,
-        views: 0
+        posttype: type,
+        eventdate: eventdate,
+        eventlocation: location,
+        categoryname: catname,
+        subcategoryname: subcatname,   
+        date: date,
+        time: time,
+        userinfo: {
+          uid: this.state.userdata.uid,
+          first_name: this.state.userdata.first_name,
+          last_name: this.state.userdata.last_name,
+          profile_picture: this.state.userdata.profile_picture,
+        },
+        views: 0,
+        report: 0,
       });
-    this.state.keyData = key;
-    
+    await this._handleSetInterest(catkey)
+    await this.setState({ 
+      newTopic: "",
+      newText: "",
+      checked: "",
+      chosenDate: "",
+      location: "",
+      selectedcat: "",
+      selectedsubcat: ""
+    });  
+    await this.props.navigation.navigate("PostDetailsScreen", {
+      dataKey: this.state.keyData,  
+      categoryname: this.state.selectedcat
+    });
+  } 
+  }
+  _handleSetInterest(catkey){
+    firebase.database().ref("/Users/" + firebase.auth().currentUser.uid + "/interests_number/").child(this.state.categorykey).set(this.state.numberOfinterest[catkey]+7)
   }
   setType(check) {
     if (check == true) {
@@ -197,7 +211,7 @@ export default class AddPostScreen extends React.Component {
                 </Body>
               </ListItem>
               {this.state.checked ? (
-                <Content>
+                <View>
                   <Item style={{ borderColor: "transparent" }}>
                   <Icon name="md-calendar"
                     style={{color: '#FFE3E3', marginLeft: 40}} />
@@ -228,7 +242,7 @@ export default class AddPostScreen extends React.Component {
                       placeholderTextColor="#d3d3d3"
                     />
                   </Item>
-                </Content>
+                </View>
               ) : null}
               <Item
                 style={{
@@ -330,11 +344,12 @@ export default class AddPostScreen extends React.Component {
                 </Form>
               </Content>
               <Button
-                onPress={() => {
-                  this.addRow(
+                onPress={async() => {
+                  await this.addRow(
                     this.state.newTopic,
                     this.state.newText,
                     this.state.postType,
+                    this.state.categorykey,
                     this.state.selectedcat,
                     this.state.selectedsubcat,
                     this.state.chosenDate.toString().substr(4, 12),
@@ -342,18 +357,7 @@ export default class AddPostScreen extends React.Component {
                     new Date().toString().substr(4, 12),
                     moment().format("hh:mm a")
                   );
-                  this.props.navigation.navigate("PostDetailsScreen", {
-                    dataKey: this.state.keyData,  
-                  });
-                  this.setState({ 
-                    newTopic: "",
-                    newText: "",
-                    checked: undefined,
-                    chosenDate: "",
-                    location: "",
-                    selectedcat: "",
-                    selectedsubcat: ""
-                  });                 
+                                
                 }}
                 style={{
                   backgroundColor: "#FF3879",

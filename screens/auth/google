@@ -1,0 +1,117 @@
+isUserEqualGG = (thisuser, firebaseUser) => {
+    if (firebaseUser) {
+      var providerData = firebaseUser.providerData;
+      for (var i = 0; i < providerData.length; i++) {
+        if (
+          providerData[i].providerId ===
+            firebase.auth.GoogleAuthProvider.PROVIDER_ID &&
+          providerData[i].uid === thisuser.uid 
+        )
+         {
+          // We don't need to reauth the Firebase connection.
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+onSignInGG = googleUser => {
+        // Check if we are already signed-in Firebase with the correct user.
+          // Build Firebase credential with the Google ID token.
+          console.log('Google Auth Response', googleUser);
+          var unsubscribe = firebase.auth().onAuthStateChanged(
+            function(firebaseUser) {
+              unsubscribe();
+              // Check if we are already signed-in Firebase with the correct user.
+          
+          if (!this.isUserEqualGG(googleUser, firebaseUser)) {
+          // Build Firebase credential with the Google ID token.
+          var credential = firebase.auth.GoogleAuthProvider.credential(
+            googleUser.idToken,
+            googleUser.accessToken
+          );
+          // Sign in with credential from the Google user.
+          var key = firebase.auth().currentUser.uid;           
+          firebase
+            .auth()
+            .signInAndRetrieveDataWithCredential(credential) 
+            .then(function(result) {
+              console.log('user signed in ');
+              if (result.additionalUserInfo.isNewUser) {
+                firebase
+                  .database()
+                  .ref('/Users/' + key)
+                  .set({
+                    uid: key,
+                    email: result.user.email,
+                    first_name: result.additionalUserInfo.profile.given_name,
+                    last_name: result.additionalUserInfo.profile.family_name,
+                    birthday: result.additionalUserInfo.profile.birthday,
+                    profile_picture: result.additionalUserInfo.profile.picture+"?sz=5000",
+                    created_at: Date.now(),
+                    interests_number: {
+                      1:0,
+                      2:0,
+                      3:0,
+                      4:0,
+                      5:0,
+                      6:0,
+                      7:0,
+                      8:0,
+                      9:0,
+                      10:0,
+                      11:0,
+                      12:0
+                    }
+                  })
+                  .then(function(snapshot){
+                    console.log('Snapshot',snapshot);
+                  })
+              } else {
+                firebase
+                  .database()
+                  .ref('/Users/' + key)
+                  .update({
+                    last_logged_in: Date.now()
+                  });
+                  
+              }
+            
+            })
+            .catch(function(error) {
+              // Handle Errors here.
+              var errorCode = error.code;
+              var errorMessage = error.message;
+              // The email of the user's account used.
+              var email = error.email;
+              // The firebase.auth.AuthCredential type that was used.
+              var credential = error.credential;
+              // ...
+            });
+       this.props.navigation.navigate("RecommenderScreen", {'dataKey': key});    
+            
+        } else {
+          console.log('User already signed-in Firebase.');
+        }
+      }.bind(this)
+    );
+  };
+  signInWithGoogleAsync = async () => {
+    try {
+      const result = await Expo.Google.logInAsync({
+        
+        behavior: 'web',
+        iosClientId: '33590640481-25088pa47chgpsnfd0b9vnn0v5tcjlt3.apps.googleusercontent.com', 
+        scopes: ['profile', 'email']
+      });
+
+      if (result.type === 'success') {
+        this.onSignInGG(result);
+        return result.accessToken;
+      } else {
+        // type === 'cancel'
+      }
+    } catch ({ message }) {
+      alert(`Facebook Login Error: ${message}`);
+      }
+  };

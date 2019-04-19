@@ -1,6 +1,6 @@
 import React from "react";
-import { StyleSheet, Text, ListView, FlatList, View } from "react-native";
-import { Container, Content, Input, Item, Button, Icon, ListItem, List, Fab} from "native-base";
+import { StyleSheet, Text, ListView, FlatList, View, Alert } from "react-native";
+import { Container, Content, Input, Item, Button, Icon, ListItem, List, Fab, Card, CardItem, Body, Right} from "native-base";
 import * as firebase from "firebase";
 
 export default class SubcategoriesControl extends React.Component {
@@ -23,7 +23,9 @@ export default class SubcategoriesControl extends React.Component {
       newSubcategory: "",
       categorykey: "",
       categoryname: "",
+      newCategoryname: "",
       subcategoryname: "",
+      newsubcategoryname: "",
       subcategorykey: "",
       clicked: false,
       Isedit: false,
@@ -40,33 +42,84 @@ export default class SubcategoriesControl extends React.Component {
         that.setState({ listViewData: newData })            
     })
   }
-  
   addSubcategory(subcatname){
     var key 
     firebase.database().ref('/Categories/'+this.state.categorykey+'/Subcategories').once('value', function(snapshot) { 
         key = snapshot.numChildren()
     });
     firebase.database().ref('/Categories/'+this.state.categorykey+'/Subcategories').child(key+1).set({subcategoryname: subcatname});
+    alert("Add "+subcatname+" successfully")
   }
-  editCategory(catname){
-    firebase.database().ref('/Categories/' + this.state.categorykey).update({
-      "categoryname": catname
+  editSubcategory = async(subcatname) => {
+    await firebase.database().ref('Posts/').on("child_added", (snapshot) => {
+      if(snapshot.val().subcategoryname === this.state.subcategoryname){
+        firebase.database().ref('Posts/'+snapshot.key).update({
+          "subcategoryname": subcatname
+        });
+      }
     });
-  }
-  editSubcategory(subcatname){
-    firebase.database().ref('/Categories/' + this.state.categorykey +'/Subcategories/'+this.state.subcategorykey).update({
+    await firebase.database().ref('/Categories/' + this.state.categorykey +'/Subcategories/'+this.state.subcategorykey).update({
       "subcategoryname": subcatname
     });
+    
+    await this.setState({subcategoryname: subcatname})
+    await this.reflesh();
+    alert("Edit successfully")
   }
-  deleteData(key){
-    firebase.database().ref('/Categories/' + this.state.categorykey +'/Subcategories/'+key).remove();
+  async deleteData(subcatname, key){
+    await firebase.database().ref('/Categories/' + this.state.categorykey +'/Subcategories/'+key).remove();
+    await firebase.database().ref('Posts/').on("child_added", (snapshot) => {
+      if(snapshot.val().subcategoryname === subcatname){
+        firebase.database().ref('Posts/'+snapshot.key).remove();
+      }
+    })
+    await this.reflesh();
+    alert("Delete successfully")
+  }
+  async reflesh(){
+    await this.setState({ listViewData: []})
+    var that = this
+    await firebase.database().ref('/Categories/'+this.state.categorykey+'/Subcategories').on('child_added', function (data) {
+      var newData = [...that.state.listViewData]
+      newData.push(data)
+      that.setState({ listViewData: newData,})     
+    })
+  }
+  _alert(subcatname,key,text){
+    Alert.alert(
+      key===""?(
+        text==='add'?(
+          "Add the subcategory "+subcatname
+        ):("Edit "+this.state.subcategoryname+" to "+subcatname)
+      ):("Delete "+ subcatname),
+      'Are you sure you want to '+
+        (key===""?(
+          text==='add'?(
+            "add the category "+subcatname+" ?"
+          ):("edit "+this.state.subcategoryname+" to "+subcatname)+" ?"
+        )
+        :("delete "+subcatname+" ?")),
+      [
+        {
+          text: 'Cancel',
+          onPress: () => console.log('Cancel Pressed'),
+          style: 'cancel',
+        },
+        {text: 'Confirm', onPress: () => {
+          if(text==="edit") {this.editSubcategory(subcatname)}
+          else if(text==="add") {this.addSubcategory(subcatname)}
+          else if(text==="delete"){this.deleteData(subcatname,key)}
+        }
+        } 
+      ],
+      {cancelable: false},
+    );
   }
   render() {
     return (
       <Container>
         <Content>
-          
-        {this.state.clicked? (
+          {this.state.clicked? (
             <Item style={{alignSelf: 'center', borderColor:'transparent', marginTop:10, paddingLeft:20, paddingRight: 20}}>
             <Item  style={{width: 300}}>
               <Input placeholder="Subcategory name"
@@ -74,13 +127,13 @@ export default class SubcategoriesControl extends React.Component {
                 value={this.state.newSubcategory}/>
             </Item>
             <Button 
-              style={{backgroundColor: '#FF3879', marginTop: 5, marginLeft: 5,width: 50  }}
+              style={{backgroundColor: '#444FAD', marginTop: 5, marginLeft: 5,width: 50  }}
               onPress={ () => {
                 if(this.state.newSubcategory==""){
                   alert("Subcategoryname is empty")
                 }
                 else{
-                  this.addSubcategory( this.state.newSubcategory );
+                  this._alert(this.state.newSubcategory,"","add")
                   this.setState({ 
                     clicked: !this.state.clicked,
                     newSubcategory: ""
@@ -92,83 +145,79 @@ export default class SubcategoriesControl extends React.Component {
             </Button>
           </Item>
           ):null}
-
-        <Item style={{alignSelf: 'center', borderColor:'transparent', marginTop:10, paddingLeft:20, paddingRight: 20}}>
-            <Item style={{width: 300}}>
-              <Input placeholder={this.state.categoryname}
-                onChangeText={categoryname => this.setState({ categoryname })} 
-                value={this.state.categoryname}/>
-            </Item>
-            <Button warning 
-              style={{ marginTop: 5, marginLeft: 5 , width: 50}}
-              onPress={ () => {
-                if(this.state.categoryname==""){
-                  alert("Categoryname is empty")
-              }
-              else{
-                  this.editCategory( this.state.categoryname );
-                  //alert("Edit Categoryname alrealdy")
-              }}}>
-              <Text style={{marginLeft: 10, color: 'white'}}> Edit</Text>
-            </Button>
-          </Item>
           {this.state.Isedit? (
             <Item style={{alignSelf: 'center', borderColor:'transparent', marginTop:10, paddingLeft:20, paddingRight: 20}}>
             <Item style={{width: 300}}>
             <Input placeholder={this.state.subcategoryname}
-              onChangeText={subcategoryname => this.setState({ subcategoryname })} 
-              value={this.state.subcategoryname}/>
+              onChangeText={newsubcategoryname => this.setState({ newsubcategoryname })} 
+              value={this.state.newsubcategoryname}/>
           </Item>
           <Button warning 
             style={{marginTop: 5, marginLeft: 5 , width: 50}}
             onPress={ () => {
-              if(this.state.subcategoryname==""){
+              if(this.state.newsubcategoryname==""){
                 alert("Subcategoryname is empty")
-            }
-            else{
-                this.editSubcategory( this.state.subcategoryname );
+              }
+              else{
+                this._alert(this.state.newsubcategoryname,"","edit");
                 //alert("Edit Subcategoryname alrealdy")
                 this.setState({ 
-                  subcategoryname: "",
+                  newsubcategoryname: "",
                   Isedit: false 
                 });
-            }
+              }
             }}>
             <Text style={{marginLeft: 10, color: 'white'}}> Edit</Text>
           </Button>
           </Item>
           ): null}
-          <List enableEmptySections
-            style={{marginLeft: 20, marginRight: 20}}
-            dataSource={this.ds.cloneWithRows(this.state.listViewData)}
-            renderRow={data =>
-            <ListItem>                  
-              <Button iconLeft warning style={{height: 40}}
-                onPress={() => 
-                  this.setState({ 
-                    Isedit: !this.state.Isedit,
-                    subcategorykey: data.key,
-                    subcategoryname: data.val().subcategoryname
-                  })  
-                }>
-                <Icon name='md-create' style={{fontSize: 14}} />
-                <Text style={{color: 'white'}}>  Edit  </Text>
-              </Button>
-              <Text style={{fontSize:16, color: '#444FAD', marginLeft: 10}}>{data.val().subcategoryname}</Text>
-              
-            </ListItem>
-            }
-            renderRightHiddenRow={(data) =>
-              <Button full danger
-              onPress={() => {
-                this.deleteData(data.key)
-              }}>
-                <Icon name="md-trash" />
-              </Button>
-            }       
-            rightOpenValue={-60}
-          />
-          
+          <Card style={{maxHeight: '90%' }}>
+            <CardItem style={{borderRadius: 10 }}>
+                <Content>
+                    <List>
+                    {this.state.listViewData.map( (data,index) => {
+                        //console.log('data',data)
+                        return(
+                            <ListItem key={index}>
+                                <Body>
+                                    <Text style={{fontSize:16, color: '#444FAD'}}
+                                    onPress={ () => {
+                                      this.props.navigation.navigate(
+                                          'PostListControl', {
+                                              'categoryname': this.state.categoryname, 
+                                              'subcategoryname': data.val().subcategoryname,
+                                          }
+                                      )
+                                  }}>{data.val().subcategoryname}</Text>
+                                </Body>
+                                <Right>
+                                    <Item style={{borderColor: "transparent"}}> 
+                                        <Button  warning 
+                                            onPress={() => 
+                                                this.setState({ 
+                                                  Isedit: !this.state.Isedit,
+                                                  subcategorykey: data.key,
+                                                  subcategoryname: data.val().subcategoryname
+                                                })  
+                                            }>
+                                            <Icon name='md-create' style={{fontSize: 14}} />
+                                        </Button>
+                                        <Button  danger  
+                                            style={{marginLeft: 5}}
+                                            onPress={() => {
+                                                this._alert(data.val().subcategoryname, data.key,"delete")
+                                            }}>
+                                            <Icon name='md-trash' style={{fontSize: 14}} />
+                                        </Button>
+                                    </Item>
+                                </Right>
+                            </ListItem>
+                        )}) 
+                    }
+                    </List>
+                </Content>
+            </CardItem>
+        </Card>
         </Content>
         <View >
           <Fab
