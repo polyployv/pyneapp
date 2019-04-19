@@ -1,90 +1,116 @@
 import React from 'react';
-import { StyleSheet, View, ImageBackground, Dimensions } from 'react-native';
-import CardStack, { Card } from 'react-native-card-stack-swiper';
-import City from '../../components/City';
-import Filters from '../../components/Filters';
-import CardItem from '../../components/CardItem';
-import Demo from '../../assets/data/demo.js';
-import Icon from 'react-native-vector-icons/FontAwesome'
+import styles from '../../styles'
 import * as firebase from 'firebase';
+import {
+  connect
+} from 'react-redux';
+import {
+  getCards
+} from '../../redux/actions'
+import SwipeCards from 'react-native-swipe-cards'
+import Cards from '../../components/Cards.js'
+import NoCards from '../../components/NoCards.js'
 
-export default class RecommenderScreen extends React.Component {
-	static navigationOptions = {
-		title:  'Recommender',
-		headerStyle: {
-			backgroundColor: '#ffe3e3',
-		},
-		headerTitleStyle: {
-			color: '#444FAD',
-		},
-	  };
+import {
+  Text,
+  View,
+  Image
+} from 'react-native';
+const lodash = require('lodash')
+const euclidean_distance = require('euclidean-distance')
+class RecommenderScreen extends React.Component {
+    componentDidMount = async () => {
+          let items = []
+          await firebase.database().ref('Users/').once('value', (snap) => {
+            snap.forEach((child) => {
+              item = {}
+              item.uid = child.key;
+              item.interests_number = child.child('interests_number');
+              items.push(item);
+            });
+          })
+          var vecter_all = []
+          await items.map(item => {
+            var vector_1 = []
+            let interest_total = lodash.sum(item.interests_number)
+            item.interests_number.val().map(value => {
+              if (interest_total === 0) {
+                vector_1.push(0)
+              } else {
+                vector_1.push(value / interest_total * 100)
+              }
+            })
+            vector_1.push(item.uid)
+            vecter_all.push(vector_1)
+          })
+          let meindex = lodash.pickBy(this.props.user.interests_number, function (value, key) {
+            if (value > 0) {
+              return key
+            }
+          })
+          await vecter_all.map( (list,index) => {
+            var temp_me = []
+            var temp_other = []
+            if(list[12] !== this.props.user.uid){
+              for(i in meindex){
+                temp_me.push(this.props.user.interests_number[i])
+                temp_other.push(list[i])
+              }
+              var interests_final = euclidean_distance(temp_me,temp_other)
+              firebase.database().ref('Users/' + this.props.user.uid +'/interests_final' ).update({ [list[12]] : interests_final });
+            }
+          })
+          this.props.dispatch(getCards(this.props.user.geocode));
+        }
+  
+          
+          handleYup(card) {
+            firebase.database().ref('Users/' + this.props.user.uid + '/swipes').update({
+              [card.uid]: true
+            });
+            this.checkMatch(card)
+          }
 
-	state = {
-		data: Demo
-	};
-	constructor(props) {
-		super(props);
-		this.state = {
-		  userdata: ""
-		}
-	  }
-	render() {
-		return (
-			<ImageBackground
-				source={require('../../assets/images/bg.png')}
-				style={styles.bg}
-			>
-				<View style={styles.container}>
-					
+          handleNope(card) {
+            firebase.database().ref('Users/' + this.props.user.uid + '/swipes').update({
+              [card.uid]: false
+            });
+          }
 
-					<CardStack
-						loop={true}
-						verticalSwipe={false}
-						renderNoMoreCards={() => {
-							return null;
-						}}
-						ref={swiper => {
-							this.swiper = swiper;
-						}}
-					>
-						{this.state.data.map((item, index) => {
-							return (
-								<Card key={index}>
-									<CardItem
-										image={item.image}
-										name={item.name}
-										description={item.description}
-										matches={item.match}
-										actions
-										onPressLeft={() => {
-											this.swiper.swipeLeft();
-										}}
-										onPressRight={() => {
-											this.swiper.swipeRight();
-										}}
-									/>
-								</Card>
-							);
-						})}
-					</CardStack>
-				</View>
-			</ImageBackground>
-		);
-	}
-}
+          checkMatch(card) {
+            firebase.database().ref('Users/' + card.uid + '/swipes/' + this.props.user.uid).once('value', (snap) => {
+              if (snap.val() == true) {
+                var me = this.props.user.uid;
+                var user = card.uid;
+              
+                firebase.database().ref('Users/' + this.props.user.uid + '/friends/' + card.uid).set(user);
+                firebase.database().ref('Users/' + card.uid + '/friends/' + this.props.user.uid).set(me);
+              }
+            });
+          }
 
-const styles = StyleSheet.create({
-	container: { marginHorizontal: 10 },
-	bg: {
-		flex: 1,
-		resizeMode: 'cover',
-		width: Dimensions.get('window').width,
-		height: Dimensions.get('window').height
-	},
-	top: {
-		paddingTop: 50,
-		marginHorizontal: 10,
-		flexDirection: 'row',
-		justifyContent: 'space-between'
-	}
-});
+          render() {
+            return ( 
+              <SwipeCards
+              cards={this.props.cards}
+              stack={false}
+              renderCard={(cardData) => <Cards {...cardData} /> }
+              renderNoMoreCards={() => <NoCards />}
+              showYup={false}
+              showNope={false}
+              handleYup={this.handleYup.bind(this)}
+              handleNope={this.handleNope.bind(this)}
+              handleMaybe={this.handleMaybe}
+              hasMaybeAction={false}/>
+              )
+            }
+          }
+
+          function mapStateToProps(state) {
+            return {
+              cards: state.cards,
+              user: state.user
+            };
+          }
+
+          export default connect(mapStateToProps)(RecommenderScreen);

@@ -21,25 +21,19 @@ class ProfileItem extends React.Component {
 				<Icon name='edit'
 							size={20}
 							style={{textAlign: 'right'}}
-							onPress={ () => {this.setState({ aboutmePress: true}) }} /> </Text>
+							onPress={ () => { this.setState({ aboutmePress: true}) } } /> </Text>
 				
 				
 							
-	{this.state.aboutmePress && 
-	<TextInput
+	{ this.state.aboutmePress && <TextInput
 		style={styles.textInput}
 		multiline={true}
 		numberOfLines={5}
 		onChangeText={(text) => this.props.dispatch(updateAbout(text))}
-		value={this.props.user.aboutMe} />
+		value={this.props.user.aboutMe}/>
 		}
-	{this.state.aboutmePress &&
-				<Button style={styles.buttonSave}
-				onPress={ () => {this.setState({ aboutmePress: false}) }}>
-				<Text style={{color:'#fff', fontWeight:'bold'}}>Save</Text></Button>}
-
-				<Text >{this.props.user.aboutMe}</Text>
-
+		<Button style={styles.button}><Text style={{color:'#fff', fontWeight:'bold'}}>Save</Text></Button>
+		
 				</View>
 		);
 	}
