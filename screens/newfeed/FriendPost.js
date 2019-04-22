@@ -77,7 +77,7 @@ class FriendPost extends React.Component {
                                         <Text style={{color: '#444FAD'}}>{data.val().topicname}</Text>
                                     </Text>
                                     <Text note style={{ marginLeft: 10, color: "#aabbcc" }}>
-                                        Post By: {data.val().userinfo.first_name+" "+data.val().userinfo.last_name}
+                                        Post By: {data.val().userinfo.name}
                                     </Text>
                                 </Body>
                                 <Right>

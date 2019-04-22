@@ -1,7 +1,9 @@
 import React from 'react';
 import styles from '../../styles';
 import { connect } from 'react-redux';
-// import LoginScreen from '../auth/LoginScreen';
+import {
+  onValueChangeGeo,
+} from '../../redux/actions';
 import { Container, Header, Content, Icon, Picker, Form, Body, Title} from "native-base";
 import * as firebase from 'firebase';
 
@@ -23,17 +25,8 @@ class SettingScreen extends React.Component {
       color: '#444FAD',
   },
   };
-    constructor(props) {
-        super(props);
-        this.state = {
-          selected: 5
-        };
-      }
-      onValueChange(value) {
-        this.setState({
-          selected: value
-        });
-    }
+
+    
 
   render() {
     return (
@@ -47,20 +40,20 @@ class SettingScreen extends React.Component {
             </Text>
             <Picker
               mode="dropdown"
-              placeholder="Select the maximum distance"
               iosIcon={<Icon name="arrow-down" />}
               textStyle={{ color: '#bbbbbb',fontWeight: "bold"  }}
               itemTextStyle={{ color: '#444fad',fontWeight: "bold"  }}
               headerStyle={{ backgroundColor: "#ffe3e3" }}
               headerBackButtonTextStyle={{ color: "#444fad",fontWeight: "bold" }}
               headerTitleStyle={{ color: "#444fad",fontWeight: "bold" }}
-              selectedValue={this.state.selected}
-              onValueChange={this.onValueChange.bind(this)}
+
+              selectedValue={this.props.geocodesubstring}
+              onValueChange={(value)=>  this.props.dispatch(onValueChangeGeo(value))}
             >
-              <Picker.Item label="0-20 km" value="5" />
-              <Picker.Item label="20-78 km" value="6" />
-              <Picker.Item label="78-630 km" value="7" />
-              <Picker.Item label="630-2500 km" value="8" />
+              <Picker.Item label="0-20 km" value="4" />
+              <Picker.Item label="20-78 km" value="3" />
+              <Picker.Item label="78-630 km" value="2" />
+              <Picker.Item label="630-2500 km" value="1" />
 
             </Picker>
           </Form> 
@@ -83,7 +76,8 @@ class SettingScreen extends React.Component {
 }
 function mapStateToProps(state) {
   return {
-    user: state.user
+    user: state.user,
+    geocodesubstring: state.geocodesubstring
   };
 }
 

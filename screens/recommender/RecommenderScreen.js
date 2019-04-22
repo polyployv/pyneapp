@@ -11,11 +11,6 @@ import SwipeCards from 'react-native-swipe-cards'
 import Cards from '../../components/Cards.js'
 import NoCards from '../../components/NoCards.js'
 
-import {
-  Text,
-  View,
-  Image
-} from 'react-native';
 const lodash = require('lodash')
 const euclidean_distance = require('euclidean-distance')
 class RecommenderScreen extends React.Component {
@@ -32,7 +27,7 @@ class RecommenderScreen extends React.Component {
           var vecter_all = []
           await items.map(item => {
             var vector_1 = []
-            let interest_total = lodash.sum(item.interests_number)
+            let interest_total = lodash.sum(item.interests_number.val())
             item.interests_number.val().map(value => {
               if (interest_total === 0) {
                 vector_1.push(0)
@@ -49,20 +44,24 @@ class RecommenderScreen extends React.Component {
             }
           })
           await vecter_all.map( (list,index) => {
-            var temp_me = []
-            var temp_other = []
             if(list[12] !== this.props.user.uid){
+              var temp_me = []
+              var temp_other = []
               for(i in meindex){
                 temp_me.push(this.props.user.interests_number[i])
                 temp_other.push(list[i])
               }
-              var interests_final = euclidean_distance(temp_me,temp_other)
-              firebase.database().ref('Users/' + this.props.user.uid +'/interests_final' ).update({ [list[12]] : interests_final });
+              var interests_fin = euclidean_distance(temp_me,temp_other)
+              firebase.database().ref('Users/' + this.props.user.uid +'/interests_fin' ).update({ [list[12]] : interests_fin });
             }
           })
-          this.props.dispatch(getCards(this.props.user.geocode));
+          console.log(this.props.geocodesubstring)
+          var geocode = this.props.user.geocode.substr(0,this.props.geocodesubstring)
+          console.log("geocode1",geocode)
+          this.props.dispatch(getCards(geocode));
         }
-  
+
+
           
           handleYup(card) {
             firebase.database().ref('Users/' + this.props.user.uid + '/swipes').update({
@@ -109,7 +108,8 @@ class RecommenderScreen extends React.Component {
           function mapStateToProps(state) {
             return {
               cards: state.cards,
-              user: state.user
+              user: state.user,
+              geocodesubstring: state.geocodesubstring
             };
           }
 

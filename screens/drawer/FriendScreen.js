@@ -40,6 +40,9 @@ class FriendScreen extends React.Component {
       }); 
     });
   }
+  componentWillUnmount = async () => {
+    await firebase.database().ref("/Users/" + this.props.user.uid + "/friends").off();
+  };
 
   render() {
     return (
