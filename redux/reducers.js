@@ -10,13 +10,14 @@ export default reducers = (state = {
 		  friends: ' ',
 		  geocode: ' ',
       interests_number: [],
-      interests_final: [],
+      interests_fin: [],
 		  notification: false,
 		  show: false,
 		  report: false,
 		  swipes: [],
 		  token: ' ',
-    }
+    }, 
+    geocodesubstring: "0",
   }, action) => {
     switch (action.type) {
       case 'LOGIN': {
@@ -33,6 +34,9 @@ export default reducers = (state = {
       }
       case 'GET_LOCATION':      
         return { ...state, user: { ...state.user, geocode : action.payload } 
+      }
+      case 'CHANGE_GEO':
+        return { ...state, geocodesubstring: action.payload
       }
       case 'ALLOW_NOTIFICATIONS':      
         return { ...state, user: { ...state.user, token : action.payload } 

@@ -103,7 +103,7 @@ export default class ProfileScreen extends React.Component {
 					</ImageBackground>
 
 					<ProfileItem
-						name={this.state.userdata.first_name+" "+this.state.userdata.last_name}
+						name={this.state.userdata.name}
 						location={text}
 
 						info1={this.state.userdata.email}

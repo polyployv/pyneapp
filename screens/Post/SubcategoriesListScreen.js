@@ -60,7 +60,7 @@ export default class SubcategoriesListScreen extends React.Component {
                 <Card style={{ marginTop: 10, marginLeft: 5, marginRight: 5}}>
                     <CardItem>
                         <Content>
-                            <Text style={{color: '#FF3879', fontSize: 18}}>Trendding</Text>
+                            <Text style={{color: '#FF3879', fontSize: 18}}>Trending</Text>
                             {     
                                 //Trending
                                 this.state.Events.map( (Data,index) => {

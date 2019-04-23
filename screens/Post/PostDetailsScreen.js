@@ -146,8 +146,7 @@ export default class PostDetailsScreen extends React.Component {
         commenttime: time, 
         userinfo:{
           uid: this.state.currentuserdata.uid,
-          first_name: this.state.currentuserdata.first_name,
-          last_name: this.state.currentuserdata.last_name,
+          name: this.state.currentuserdata.name,
           profile_picture: this.state.currentuserdata.profile_picture,
         },
         report: 0,
@@ -275,7 +274,7 @@ _handleSetInterest(number){
                 <Text
                   style={{ fontSize: 18, color: "#ffE3E3", fontWeight: "bold" }}
                 >
-                  {this.state.userinfo.first_name+" "+this.state.userinfo.last_name}
+                  {this.state.userinfo.name}
                 </Text>
                 <Text
                   style={{ marginLeft: 15, marginTop: 5 }}
@@ -360,7 +359,7 @@ _handleSetInterest(number){
                 <Text
                   style={{ fontWeight: "bold", fontSize: 16, color: "#444FAD" }}
                 >
-                {data.val().userinfo.first_name+" "+data.val().userinfo.last_name}
+                {data.val().userinfo.name}
                 </Text>
                 <Text note style={{ marginLeft: 10, color: "#444FAD" }}>
                   {data.val().commenttext}

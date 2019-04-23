@@ -28,7 +28,7 @@ export function login(user){
 				11:0,
 				12:0
 			},
-			interests_final: '',
+			interests_fin: '',
 			created_at: Date.now(),
 			friends: '',
 		  notification: false,
@@ -59,6 +59,8 @@ export function logout(){
 }
 
 
+
+
 export function updateAbout(value){
 	return function(dispatch){
 		dispatch({ type: 'UPDATE_ABOUT', payload: value });
@@ -71,7 +73,7 @@ export function updateAbout(value){
 
 export function getCards(geocode){
 	return function(dispatch){
-		firebase.database().ref('Users').orderByChild("geocode").equalTo(geocode).once('value', (snap) => {
+		firebase.database().ref('Users').orderByChild("geocode").startAt(geocode).endAt(geocode+"\uf8ff").once('value', (snap) => {
 		  var items = [];
 		  snap.forEach((child) => {
 		    item = child.val();
@@ -82,7 +84,8 @@ export function getCards(geocode){
 			var me = items.find(item =>{
 				return item.uid === me_uid;	
 			})
-			let interest = me.interests_final
+
+			let interest = me.interests_fin
 			let sorted = Object.keys(interest).sort(function(a,b){return interest[b]-interest[a]})
 			var items_fin = [];
 			sorted.forEach(i=>{
@@ -91,12 +94,16 @@ export function getCards(geocode){
 				})
 				items_fin.push(user);
 			})
-			dispatch({ type: 'GET_CARDS', payload: items });
+			dispatch({ type: 'GET_CARDS', payload: items_fin });
 		});
 	}
 }
 
-
+export function onValueChangeGeo(value) {
+	return function(dispatch){
+		dispatch({ type: 'CHANGE_GEO', payload: value });
+  }
+}
 
 
 export function getLocation(){

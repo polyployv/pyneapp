@@ -113,8 +113,7 @@ export default class AddPostScreen extends React.Component {
         time: time,
         userinfo: {
           uid: this.state.userdata.uid,
-          first_name: this.state.userdata.first_name,
-          last_name: this.state.userdata.last_name,
+          name: this.state.userdata.name,
           profile_picture: this.state.userdata.profile_picture,
         },
         views: 0,
