@@ -17,8 +17,8 @@ export default class CategoriesControl extends React.Component {
         onPress={() => navigation.navigate('ReportList')} />
     ),
     headerRight: (
-      <Icon name="md-log-out"
-        style={{marginRight: 15, color: '#444FAD'}}
+      <Icon  name="md-log-out"
+        style={{marginRight: 15, color: '#FF3879'}}
         onPress={() => {
           firebase.auth().signOut().then(function() {
             navigation.navigate('LoginScreen')

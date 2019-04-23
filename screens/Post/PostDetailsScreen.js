@@ -45,12 +45,7 @@ export default class PostDetailsScreen extends React.Component {
       categoryname: this.props.navigation.state.params.categoryname,
       currentUserID: firebase.auth().currentUser.uid
     });
-    console.log("key: "+this.state.keyData)
-    console.log("catname: "+this.state.categoryname)
-    console.log("uid: "+this.state.currentUserID)
     await this.checkCategoryKey(this.state.categoryname)
-    this.state.like = this.checkLike(this.state.currentUserID);
-    this.state.numberOflike = this.likeCount(this.state.currentUserID); 
     await firebase.database().ref("Posts/" + this.state.keyData).on("value", snapshot => {
       this.setState({ 
         postdata: snapshot.val(), 
@@ -72,11 +67,14 @@ export default class PostDetailsScreen extends React.Component {
       this.setState({ currentuserdata: snapshot.val(), } );
     });
     this.viewCount();
+    this.state.like = this.checkLike(this.state.currentUserID);
+    this.state.numberOflike = this.likeCount(this.state.currentUserID); 
+    console.log("numOflikes: "+this.likeCount(this.state.currentUserID))
   }
-  componentWillUnmount = async () => {
-    await firebase.database().ref("/Posts/").off();
-    await firebase.database().ref("/Users/").off();
-  };
+  // componentWillUnmount = async () => {
+  //   await firebase.database().ref("/Posts/").off();
+  //   await firebase.database().ref("/Users/").off();
+  // };
   report(key,commentkey,text){
     Alert.alert(
       'Report',
@@ -171,7 +169,7 @@ export default class PostDetailsScreen extends React.Component {
     firebase
     .database()
     .ref("Posts/" + this.state.keyData + "/likes/")
-    .child(uid).once('value', function(snapshot) {
+    .once('value', function(snapshot) {
       numberOflike = snapshot.numChildren()
     });
     return numberOflike

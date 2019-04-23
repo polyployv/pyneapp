@@ -78,7 +78,11 @@ export default class ReportList extends React.Component {
               var new_comment = [...that.state.listCommentData];
               if (data_commend.val().report !== 0) {
                 new_comment.push(data_commend);
+                new_comment = new_comment.sort((a, b) => {
+                  return a.val().report - b.val().report;
+                });
               }
+              new_comment = new_comment.reverse();
               that.setState({ listCommentData: new_comment });
             });
       });

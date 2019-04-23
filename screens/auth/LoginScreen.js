@@ -3,7 +3,10 @@ import {
   Image,
   StyleSheet,
   View,
-  Text
+  Text, 
+  TextInput,
+  Button,  
+  SafeAreaView
 } from 'react-native';
 
 import {Content} from 'native-base';
@@ -19,9 +22,36 @@ class LoginScreen extends React.Component {
   constructor(props){
     super(props)
     this.state = {
+      showModal: false,
+      username: "",
+      password: "",
+      isFocused: false,
 
     }
   }
+  _handleLogin = async() => {
+    await firebase
+      .auth()
+      .signInWithEmailAndPassword(this.state.username, this.state.password)
+      .then(response => {
+        console.log('success: ', this.state.username, this.state.password)
+        this.props.navigation.navigate("CategoriesControl");
+      })
+      .catch(error => {
+        console.log('info: ', this.state.username, this.state.password)
+        console.log("error");
+        alert("Wrong username or password")
+      });
+      await this.setState({ 
+        showModal: false ,
+        username: "",
+        password: ""
+      })
+  };
+  _handleHeaderRight = () => {
+    this.setState({ showModal: true });
+    //this.props.navigation.navigate("CategoriesControl")
+  };
 
 login = async() =>{
   try {
@@ -54,6 +84,51 @@ login = async() =>{
 }
     render() {
     return(
+      <SafeAreaView style={{ flex: 1 }}>
+        {this.state.showModal ? (
+          <View
+            style={{
+              height: "100%",
+              width: "100%",
+              elevation: 24,
+              backgroundColor: "#ffe3e3",
+              justifyContent: "center",
+              alignItems: "center"
+            }}
+          >
+            <TextInput
+              style={{ height: 30, width: "80%", fontSize: 18, color: '#444FAD'}}
+              placeholder={"Username"}
+              selectionColor={'#444FAD'}
+              value={this.state.username}
+              onChangeText={value => this.setState({ username: value })}
+            />
+            <TextInput
+              secureTextEntry={true}
+              style={{ height: 30, width: "80%", fontSize: 18, color: '#444FAD' }}
+              textContentType={"password"}
+              placeholder={"Password"}
+              selectionColor={'#444FAD'}
+              value={this.state.password}
+              onChangeText={value => this.setState({ password: value })}
+            />
+
+            <Button 
+              title={"Login"} 
+              type="solid"
+              onPress={
+                this._handleLogin
+              }/>
+            <Button
+              title={"Exit"}
+              onPress={() => {
+                this.setState({ showModal: false });
+              }}
+            />
+          </View>
+        ) : (
+          <View />
+        )}
       <View style={styles.container}>
       <Content>
             <Image source={require('../../assets/images/pynelogo.png')}
@@ -70,13 +145,16 @@ login = async() =>{
             </View>  
      </Content>
      <Text style={{fontSize:17,color: '#444fad'}}
-                            onPress={ () => {this.props.navigation.navigate(
-                                'CategoriesControl')}}> admin </Text>
+        //onPress={ () => {this.props.navigation.navigate('CategoriesControl')}}> 
+        onPress={this._handleHeaderRight}>
+        admin 
+      </Text>
             <Icon
                   name="shield-outline"
                   color="#444fad"
                   size= {30}/>     
-            </View>   
+      </View>  
+      </SafeAreaView> 
     );
   }
   }
