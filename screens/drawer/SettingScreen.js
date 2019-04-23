@@ -54,6 +54,7 @@ class SettingScreen extends React.Component {
               <Picker.Item label="20-78 km" value="3" />
               <Picker.Item label="78-630 km" value="2" />
               <Picker.Item label="630-2500 km" value="1" />
+              <Picker.Item label="world" value="0" />
 
             </Picker>
           </Form> 

@@ -17,7 +17,7 @@ export default reducers = (state = {
 		  swipes: [],
 		  token: ' ',
     }, 
-    geocodesubstring: "0",
+    geocodesubstring: "1",
   }, action) => {
     switch (action.type) {
       case 'LOGIN': {
@@ -29,8 +29,9 @@ export default reducers = (state = {
       case 'UPDATE_ABOUT':      
         return { ...state, user: { ...state.user, aboutMe : action.payload } 
       }
-      case 'GET_CARDS':      
-        return { ...state, cards: action.payload
+      case 'GET_CARDS':
+      const values = action.payload.filter(item => item !== undefined)  
+        return { ...state, cards: values
       }
       case 'GET_LOCATION':      
         return { ...state, user: { ...state.user, geocode : action.payload } 

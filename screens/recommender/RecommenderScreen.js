@@ -15,6 +15,66 @@ const lodash = require('lodash')
 const euclidean_distance = require('euclidean-distance')
 class RecommenderScreen extends React.Component {
     componentDidMount = async () => {
+      
+          let items = []
+          await new Promise(async(resolve, reject) => {
+            console.log(1111)
+            await firebase.database().ref('Users/').once('value', async(snap) => {
+              console.log(111)
+              await snap.forEach((child) => {
+                item = {}
+                item.uid = child.key;
+                item.interests_number = child.child('interests_number');
+                items.push(item);
+              });
+              console.log(222)
+            })
+          })
+          console.log("items",items)
+          var vecter_all = []
+          await items.map(item => {
+            var vector_1 = []
+            let interest_total = lodash.sum(item.interests_number.val())
+            item.interests_number.val().map(value => {
+              if (interest_total === 0) {
+                vector_1.push(0)
+              } else {
+                vector_1.push(value / interest_total * 100)
+              }
+            })
+            vector_1.push(item.uid)
+            vecter_all.push(vector_1)
+          })
+          let meindex = lodash.pickBy(this.props.user.interests_number, function (value, key) {
+            if (value > 0) {
+              return key
+            }
+          })
+          await vecter_all.map( (list,index) => {
+            if(list[12] !== this.props.user.uid){
+              var temp_me = []
+              var temp_other = []
+              for(i in meindex){
+                temp_me.push(this.props.user.interests_number[i])
+                temp_other.push(list[i])
+              }
+              var interests_fin = euclidean_distance(temp_me,temp_other)
+              firebase.database().ref('Users/' + this.props.user.uid +'/interests_fin' ).update({ [list[12]] : interests_fin });
+            }
+          })
+          console.log(this.props.geocodesubstring)
+          var geocode = this.props.user.geocode.substr(0,this.props.geocodesubstring)
+          console.log("geocode1",geocode)
+          this.props.dispatch(getCards(geocode));
+          
+        }
+        shouldComponentUpdate(nextProps, nextState){
+          if(this.props.geocodesubstring != nextProps.geocodesubstring){
+            return true;
+          }
+          return false;
+        }
+        componentDidUpdate = async () =>{
           let items = []
           await firebase.database().ref('Users/').once('value', (snap) => {
             snap.forEach((child) => {
@@ -89,6 +149,7 @@ class RecommenderScreen extends React.Component {
           }
 
           render() {
+            console.log(this.props.cards)
             return ( 
               <SwipeCards
               cards={this.props.cards}
